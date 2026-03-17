@@ -1,11 +1,12 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Target, Download, Users, Loader2 } from 'lucide-react';
 import { useData } from '../DataContext';
+import { PROJECTION_SCRIPT_URL } from '../constants';
 
 interface WeeklyProjection { projection: number; collected: number; reached: number; }
 interface AgentProjection { id: string; name: string; weeks: { w1: WeeklyProjection; w2: WeeklyProjection; w3: WeeklyProjection; w4: WeeklyProjection; }; totalProjection: number; totalCollected: number; totalReached: number; }
 
-const SCRIPT_URL = import.meta.env.VITE_PROJECTION_SCRIPT_URL;
+const SCRIPT_URL = import.meta.env.VITE_PROJECTION_SCRIPT_URL || PROJECTION_SCRIPT_URL;
 
 const ProjectionDashboard: React.FC = () => {
   const { collectors, fetchCollectors, projection, fetchProjection } = useData();
@@ -26,7 +27,7 @@ const ProjectionDashboard: React.FC = () => {
   const error = projection.error;
 
   useEffect(() => {
-    if (!import.meta.env.VITE_PROJECTION_SCRIPT_URL) {
+    if (!import.meta.env.VITE_PROJECTION_SCRIPT_URL && (!PROJECTION_SCRIPT_URL || PROJECTION_SCRIPT_URL.includes('PLACEHOLDER'))) {
       setIsMock(true);
     } else {
       setIsMock(false);

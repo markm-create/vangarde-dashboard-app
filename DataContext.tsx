@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { sheetService } from './services/sheetService';
 import { ExecutiveData, HomeData, Collector, AuditScoringData } from './types';
+import { PROJECTION_SCRIPT_URL, ONBOARDING_AUDIT_SCRIPT_URL, ACCOUNT_CLOSURE_AUDIT_SCRIPT_URL, DECLINE_RECOVERY_SCRIPT_URL } from './constants';
 
 interface Payment { 
   accountId: string; 
@@ -662,8 +663,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setProjection(prev => ({ ...prev, isLoading: true, error: null }));
     try {
-      const SCRIPT_URL = import.meta.env.VITE_PROJECTION_SCRIPT_URL;
-      if (!SCRIPT_URL) {
+      const SCRIPT_URL = import.meta.env.VITE_PROJECTION_SCRIPT_URL || PROJECTION_SCRIPT_URL;
+      if (!SCRIPT_URL || SCRIPT_URL.includes('PLACEHOLDER')) {
         // Mock data logic
         const activeCollectors = collectors.data || [];
         const mock = activeCollectors.map((c: any, i: number) => {
@@ -770,7 +771,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setOnboardingAudits(prev => ({ ...prev, isLoading: true, error: null }));
     try {
-      const SCRIPT_URL = import.meta.env.VITE_ONBOARDING_AUDIT_SCRIPT_URL || "https://script.google.com/macros/s/AKfycbzifIxZFboKWxdXaIcabFQ_7WkccWAij9F2LwccNWyQrkqFw_Cs688uf_RisvXVNFwbCw/exec";
+      const SCRIPT_URL = import.meta.env.VITE_ONBOARDING_AUDIT_SCRIPT_URL || ONBOARDING_AUDIT_SCRIPT_URL;
       
       const response = await fetch(SCRIPT_URL);
       if (!response.ok) {
@@ -817,7 +818,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setAccountClosureAudit(prev => ({ ...prev, isLoading: true, error: null }));
     try {
-      const SCRIPT_URL = import.meta.env.VITE_ACCOUNT_CLOSURE_AUDIT_URL || "https://script.google.com/macros/s/AKfycbzle7UUrdcDp5vw1_XUQuYjNQM2GYS_vGhHI2R47KhT-IO9Qy9_BSRrJp7a8Odd4bVLlw/exec";
+      const SCRIPT_URL = import.meta.env.VITE_ACCOUNT_CLOSURE_AUDIT_URL || ACCOUNT_CLOSURE_AUDIT_SCRIPT_URL;
       
       const response = await fetch(`${SCRIPT_URL}?action=getAccountClosureAudit`);
       if (!response.ok) throw new Error(`Server responded with status ${response.status}`);
@@ -856,7 +857,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setDeclineRecovery(prev => ({ ...prev, isLoading: true, error: null }));
     try {
-      const SCRIPT_URL = import.meta.env.VITE_DECLINE_RECOVERY_SCRIPT_URL || "https://script.google.com/macros/s/AKfycbyqpiFO_lGT41RMQWzXJp1kU5ZOFDjzfB51rbIhe5uqZOigrQlATR4asqwaZ6aIleSYXg/exec";
+      const SCRIPT_URL = import.meta.env.VITE_DECLINE_RECOVERY_SCRIPT_URL || DECLINE_RECOVERY_SCRIPT_URL;
       
       const response = await fetch(SCRIPT_URL);
       if (!response.ok) throw new Error(`Server responded with status ${response.status}`);
