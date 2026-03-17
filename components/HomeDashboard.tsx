@@ -329,7 +329,9 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
             </div>
 
             <div className="bg-card rounded-[2rem] p-8 border border-border-subtle h-[24rem] shrink-0 flex flex-col shadow-sm">
-                <h3 className="font-black text-xl text-text-main mb-6 uppercase tracking-tight shrink-0">Yesterday's Heroes</h3>
+                <h3 className="font-black text-xl text-text-main mb-6 uppercase tracking-tight shrink-0">
+                    Yesterday's {heroes.length === 1 ? 'Hero' : 'Heroes'}
+                </h3>
                 <div className="space-y-4 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-border-subtle flex-1">
                     {heroes.map((hero, i) => (
                         <div key={i} className="flex items-center justify-between p-4 bg-surface-100 rounded-2xl border border-border-subtle hover:border-indigo-400/30 transition-all">

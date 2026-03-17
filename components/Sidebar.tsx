@@ -16,7 +16,8 @@ import {
   Home,
   TrendingUp,
   FileText,
-  AlertOctagon
+  AlertOctagon,
+  Megaphone
 } from 'lucide-react';
 import { useData } from '../DataContext';
 import { TabType, AppUser, Collector } from '../types';
@@ -249,6 +250,17 @@ const Sidebar: React.FC<SidebarProps> = ({
               isActive={activeTab === 'inventory' || activeTab === 'collector-breakdown' || activeTab === 'metric-breakdown'} 
               isCollapsed={isCollapsed}
               onClick={() => onResetToMainTab('inventory')} 
+            />
+          )}
+
+          {/* 8.5 Campaign */}
+          {permissions.viewCampaign && (
+            <NavItem 
+              icon={Megaphone} 
+              label="Campaign" 
+              isActive={activeTab === 'campaign'} 
+              isCollapsed={isCollapsed}
+              onClick={() => onResetToMainTab('campaign')} 
             />
           )}
 

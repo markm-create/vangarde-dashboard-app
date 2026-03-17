@@ -12,6 +12,7 @@ import IndividualAuditLogs from './components/IndividualAuditLogs';
 import ProjectionDashboard from './components/ProjectionDashboard';
 import MirrorDashboard from './components/MirrorDashboard';
 import InventoryDashboard from './components/InventoryDashboard';
+import CampaignDashboard from './components/CampaignDashboard';
 import RPCLogsDashboard from './components/RPCLogsDashboard';
 import UserSettings from './components/UserSettings';
 import MonthlyCollectionsHistory from './components/MonthlyCollectionsHistory';
@@ -353,6 +354,8 @@ export default function App() {
         );
       case 'inventory':
         return <InventoryDashboard onCollectorBreakdownClick={handleCollectorBreakdownClick} onMetricClick={handleMetricClick} />;
+      case 'campaign':
+        return <CampaignDashboard onBack={() => resetToMainTab('home')} />;
       case 'new-imports':
         return <NewImportsReport onBack={() => resetToMainTab('home')} canExport={currentUser.permissions.manageDocuments} />;
       case 'new-assigned':
