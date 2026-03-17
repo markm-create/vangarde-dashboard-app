@@ -354,18 +354,18 @@ export default function App() {
       case 'inventory':
         return <InventoryDashboard onCollectorBreakdownClick={handleCollectorBreakdownClick} onMetricClick={handleMetricClick} />;
       case 'new-imports':
-        return <NewImportsReport onBack={() => setActiveTab('home')} canExport={currentUser.permissions.manageDocuments} />;
+        return <NewImportsReport onBack={() => resetToMainTab('home')} canExport={currentUser.permissions.manageDocuments} />;
       case 'new-assigned':
-        return <NewAssignedAccounts onBack={() => setActiveTab('home')} currentUser={currentUser} />;
+        return <NewAssignedAccounts onBack={() => resetToMainTab('home')} currentUser={currentUser} />;
       case 'call-performance':
-        return <CallPerformanceReport onBack={() => setActiveTab('home')} canExport={currentUser.permissions.manageDocuments} />;
+        return <CallPerformanceReport onBack={() => resetToMainTab('home')} canExport={currentUser.permissions.manageDocuments} />;
       case 'overdue-payments':
-        return <OverduePaymentsReport onBack={() => setActiveTab('home')} canExport={currentUser.permissions.manageDocuments} />;
+        return <OverduePaymentsReport onBack={() => resetToMainTab('home')} canExport={currentUser.permissions.manageDocuments} />;
       case 'reports':
         return (
           <div className="p-8 space-y-8 bg-app h-screen animate-in fade-in duration-500 font-sans overflow-hidden flex flex-col">
             <div className="flex items-center gap-4 shrink-0">
-              <button onClick={() => setActiveTab('home')} className="p-2.5 rounded-2xl bg-card border border-border-subtle text-text-muted hover:text-indigo-600 shadow-sm transition-all group">
+              <button onClick={() => resetToMainTab('home')} className="p-2.5 rounded-2xl bg-card border border-border-subtle text-text-muted hover:text-indigo-600 shadow-sm transition-all group">
                 <ArrowLeft size={20} className="group-hover:-translate-x-0.5" />
               </button>
               <div>
@@ -385,13 +385,13 @@ export default function App() {
       case 'settings':
         return <UserSettings isDarkMode={isDarkMode} onToggleDarkMode={() => setIsDarkMode(!isDarkMode)} currentUser={currentUser} />;
       case 'collections-history':
-        return <MonthlyCollectionsHistory onBack={() => setActiveTab('home')} currentUser={currentUser} />;
+        return <MonthlyCollectionsHistory onBack={() => resetToMainTab('home')} currentUser={currentUser} />;
       case 'collector-breakdown':
         if (selectedCollector) {
           return (
             <CollectorAccountBreakdown 
               collector={selectedCollector} 
-              onBack={() => setActiveTab('inventory')} 
+              onBack={() => resetToMainTab('inventory')} 
             />
           );
         }
@@ -401,7 +401,7 @@ export default function App() {
           return (
             <MetricAccountBreakdown 
               category={selectedMetricCategory} 
-              onBack={() => setActiveTab('inventory')} 
+              onBack={() => resetToMainTab('inventory')} 
             />
           );
         }
@@ -412,7 +412,7 @@ export default function App() {
             <IndividualCollectorDashboard 
               key={selectedCollector.id}
               collector={selectedCollector} 
-              onViewAudits={() => setActiveTab('individual-audits')} 
+              onViewAudits={() => resetToMainTab('individual-audits')} 
               onCollectorDeleted={handleCollectorDeleted}
             />
           );
@@ -423,7 +423,7 @@ export default function App() {
           return (
             <IndividualAuditLogs 
               collector={selectedCollector} 
-              onBack={() => setActiveTab('individual')} 
+              onBack={() => resetToMainTab('individual')} 
               canManageDocuments={currentUser.permissions.manageDocuments}
               canSendReport={currentUser.permissions.sendReport}
             />
