@@ -83,13 +83,26 @@ const Sidebar: React.FC<SidebarProps> = ({
   }, [collectors.data, role, currentUser.name, permissions]);
 
   React.useEffect(() => {
+    // Only enforce this check if we are viewing the individual collector dashboard
+    if (activeTab !== 'individual' && activeTab !== 'individual-audits') {
+      return;
+    }
+
     if (selectedCollector && collectors.data && collectors.data.length > 0) {
-      const isStillAllowed = allowedCollectors.some(c => c.id === selectedCollector.id);
+      // Admins, Managers, CEOs, and Developers can view any collector (even historical ones not in the active list)
+      if (role === 'Administrator' || role === 'Manager' || role === 'CEO' || role === 'Developer') {
+        return;
+      }
+
+      const isStillAllowed = allowedCollectors.some(c => 
+        c.id === selectedCollector.id || 
+        c.name.toLowerCase().trim() === selectedCollector.name.toLowerCase().trim()
+      );
       if (!isStillAllowed && onCollectorDeleted) {
         onCollectorDeleted();
       }
     }
-  }, [selectedCollector, allowedCollectors, collectors.data, onCollectorDeleted]);
+  }, [selectedCollector, allowedCollectors, collectors.data, onCollectorDeleted, role, activeTab]);
 
   return (
     <aside 
@@ -233,7 +246,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             <NavItem 
               icon={Package} 
               label="Inventory" 
-              isActive={activeTab === 'inventory'} 
+              isActive={activeTab === 'inventory' || activeTab === 'collector-breakdown' || activeTab === 'metric-breakdown'} 
               isCollapsed={isCollapsed}
               onClick={() => onResetToMainTab('inventory')} 
             />
