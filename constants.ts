@@ -54,6 +54,9 @@ export const COLLECTOR_HOME_SCRIPT_URL: string = getValidUrl(import.meta.env.VIT
 // Inventory Script URL
 export const INVENTORY_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_INVENTORY_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbxXhkebI88ismWX4nSGPmF7mDFzLTRsi1URr13sHXxsB3n0qfGetwwro6HGf0xbj5cePQ/exec");
 
+// Collector Inventory Script URL
+export const COLLECTOR_INVENTORY_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_COLLECTOR_INVENTORY_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbxshC2U2vFFdboUA4Xovibz7qjBlBHCM66W3JN3i-8cWKe_sJcAl5Z4-LqXYD3KDYEh/exec");
+
 // Onboarding Account Audit Report Script URL
 export const ONBOARDING_AUDIT_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_ONBOARDING_AUDIT_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbzifIxZFboKWxdXaIcabFQ_7WkccWAij9F2LwccNWyQrkqFw_Cs688uf_RisvXVNFwbCw/exec");
 
@@ -92,6 +95,7 @@ export const DEFAULT_PERMISSIONS: AppPermissions = {
   viewCollectorHome: false,
   viewAuditDashboard: false,
   viewInventory: false,
+  viewCollectorInventory: false,
   viewCampaign: false,
   viewSettings: false,
   viewOverduePayments: false,
@@ -129,6 +133,7 @@ export const getDefaultPermissionsForRole = (role: AppUser['role'], email: strin
       viewCollectorHome: false,
       viewAuditDashboard: true,
       viewInventory: true,
+      viewCollectorInventory: true,
       viewCampaign: true,
       viewSettings: true,
       viewOverduePayments: true,
@@ -158,6 +163,7 @@ export const getDefaultPermissionsForRole = (role: AppUser['role'], email: strin
       viewCollectorHome: false,
       viewAuditDashboard: true,
       viewInventory: true,
+      viewCollectorInventory: true,
       viewCampaign: true,
       viewSettings: true,
       viewOverduePayments: true,
@@ -184,6 +190,7 @@ export const getDefaultPermissionsForRole = (role: AppUser['role'], email: strin
       viewRPCLogs: true,
       viewCollectorDashboard: true,
       viewCollectorHome: true,
+      viewCollectorInventory: true,
       viewSettings: true,
       manageRPCLogs: true,
       allowedCollectorIds: [] // Usually restricted to self, but defaults empty for now

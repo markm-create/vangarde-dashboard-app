@@ -11,6 +11,7 @@ interface Account {
   accountStatus: string;
   accountAge: number;
   balance: number;
+  accountUrl?: string;
 }
 
 interface MetricCategory {
@@ -35,7 +36,8 @@ const MetricAccountBreakdown: React.FC<{ category: MetricCategory; onBack: () =>
       'Client Name',
       'Account Status',
       'Account Age',
-      'Balance'
+      'Balance',
+      'Account URL'
     ];
 
     const csvData = accounts.map(acc => [
@@ -46,7 +48,8 @@ const MetricAccountBreakdown: React.FC<{ category: MetricCategory; onBack: () =>
       `"${acc.clientName || ''}"`,
       `"${acc.accountStatus || ''}"`,
       acc.accountAge,
-      acc.balance
+      acc.balance,
+      `"${acc.accountUrl || ''}"`
     ]);
 
     const csvContent = [
@@ -147,7 +150,20 @@ const MetricAccountBreakdown: React.FC<{ category: MetricCategory; onBack: () =>
                   accounts.map((acc, idx) => (
                     <tr key={idx} className="hover:bg-surface-100 transition-colors">
                       <td className="px-6 py-5 font-medium">{acc.internalCaseId || '-'}</td>
-                      <td className="px-6 py-5 font-medium">{acc.caseNumber || '-'}</td>
+                      <td className="px-6 py-5 font-medium">
+                        {acc.accountUrl ? (
+                          <a 
+                            href={acc.accountUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="text-indigo-600 hover:text-indigo-800 hover:underline transition-colors"
+                          >
+                            {acc.caseNumber || '-'}
+                          </a>
+                        ) : (
+                          acc.caseNumber || '-'
+                        )}
+                      </td>
                       <td className="px-6 py-5 font-medium">{acc.collectorName || 'Unassigned'}</td>
                       <td className="px-6 py-5 font-medium">{acc.businessName || '-'}</td>
                       <td className="px-6 py-5 font-medium">{acc.clientName || '-'}</td>

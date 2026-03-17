@@ -45,9 +45,15 @@ function getAccountClosureAudit() {
   }
   
   // Get data from A2 to I (last row)
-  const data = sheet.getRange(2, 1, lastRow - 1, 9).getValues();
+  const range = sheet.getRange(2, 1, lastRow - 1, 9);
+  const data = range.getValues();
+  const richTextValues = range.getRichTextValues();
   
-  const results = data.map(row => {
+  const results = data.map((row, i) => {
+    // Extract link from Column A (index 0)
+    const richText = richTextValues[i][0];
+    const link = richText ? richText.getLinkUrl() : null;
+
     return {
       accountNumber: row[0],
       collectorName: row[1],
@@ -57,7 +63,8 @@ function getAccountClosureAudit() {
       balance: row[5],
       age: row[6],
       auditResult: row[7],
-      auditComments: row[8]
+      auditComments: row[8],
+      accountUrl: link
     };
   }).filter(item => item.accountNumber || item.collectorName); // Filter out empty rows
   

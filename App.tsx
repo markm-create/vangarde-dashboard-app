@@ -24,6 +24,7 @@ import CollectorAccountBreakdown from './components/CollectorAccountBreakdown';
 import MetricAccountBreakdown from './components/MetricAccountBreakdown';
 import CollectorHome from './components/CollectorHome/CollectorHome';
 import NewAssignedAccounts from './components/NewAssignedAccounts';
+import CollectorInventory from './components/CollectorInventory';
 import Login from './Login';
 import { getDefaultPermissionsForRole, USER_SCRIPT_URL, CONFIG } from './constants';
 
@@ -111,10 +112,9 @@ export default function App() {
           // Use a more robust fetch approach for Google Scripts
           const response = await fetch(USER_SCRIPT_URL, {
             method: 'POST',
-            // Removing explicit mode: 'cors' can sometimes help with GAS redirects
-            // but we keep credentials: 'omit' for security/simplicity
             credentials: 'omit',
-            headers: { 'Content-Type': 'text/plain' },
+            redirect: 'follow',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: JSON.stringify({ action: 'getUsers' })
           });
           
@@ -200,8 +200,9 @@ export default function App() {
       const response = await fetch(USER_SCRIPT_URL, {
         method: 'POST',
         credentials: 'omit',
+        redirect: 'follow',
         headers: {
-          'Content-Type': 'text/plain',
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: JSON.stringify({ 
           action: 'verifyLogin', 
@@ -356,6 +357,8 @@ export default function App() {
         return <InventoryDashboard onCollectorBreakdownClick={handleCollectorBreakdownClick} onMetricClick={handleMetricClick} />;
       case 'campaign':
         return <CampaignDashboard onBack={() => resetToMainTab('home')} />;
+      case 'collector-inventory':
+        return <CollectorInventory currentUser={currentUser} onBack={() => resetToMainTab('home')} />;
       case 'new-imports':
         return <NewImportsReport onBack={() => resetToMainTab('home')} canExport={currentUser.permissions.manageDocuments} />;
       case 'new-assigned':

@@ -11,6 +11,7 @@ interface Account {
   accountStatus: string;
   accountAge: number;
   balance: number;
+  accountUrl?: string;
 }
 
 const CollectorAccountBreakdown: React.FC<{ collector: Collector; onBack: () => void }> = ({ collector, onBack }) => {
@@ -28,7 +29,8 @@ const CollectorAccountBreakdown: React.FC<{ collector: Collector; onBack: () => 
       'Client Name',
       'Account Status',
       'Account Age',
-      'Balance'
+      'Balance',
+      'Account URL'
     ];
 
     const csvData = accounts.map(acc => [
@@ -38,7 +40,8 @@ const CollectorAccountBreakdown: React.FC<{ collector: Collector; onBack: () => 
       `"${acc.clientName || ''}"`,
       `"${acc.accountStatus || ''}"`,
       acc.accountAge,
-      acc.balance
+      acc.balance,
+      `"${acc.accountUrl || ''}"`
     ]);
 
     const csvContent = [
@@ -129,7 +132,8 @@ const CollectorAccountBreakdown: React.FC<{ collector: Collector; onBack: () => 
               clientName: item.clientName || '-',
               accountStatus: item.accountStatus || '-',
               accountAge: Number(item.accountAge) || 0,
-              balance: Number(item.balance) || 0
+              balance: Number(item.balance) || 0,
+              accountUrl: item.accountUrl || null
             }));
             
           setAccounts(filtered);
@@ -200,7 +204,20 @@ const CollectorAccountBreakdown: React.FC<{ collector: Collector; onBack: () => 
                 accounts.map((acc, idx) => (
                   <tr key={idx} className="hover:bg-surface-100">
                     <td className="px-6 py-5 font-medium">{acc.internalCaseId}</td>
-                    <td className="px-6 py-5 font-medium">{acc.caseNumber}</td>
+                    <td className="px-6 py-5 font-medium">
+                      {acc.accountUrl ? (
+                        <a 
+                          href={acc.accountUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="text-indigo-600 hover:text-indigo-800 hover:underline transition-colors flex items-center gap-1"
+                        >
+                          {acc.caseNumber}
+                        </a>
+                      ) : (
+                        acc.caseNumber
+                      )}
+                    </td>
                     <td className="px-6 py-5 font-medium">{acc.businessName}</td>
                     <td className="px-6 py-5 font-medium">{acc.clientName}</td>
                     <td className="px-6 py-5 font-medium">{acc.accountStatus}</td>

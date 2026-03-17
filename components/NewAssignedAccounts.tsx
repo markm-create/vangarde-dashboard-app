@@ -21,6 +21,7 @@ interface AssignedAccount {
   businessName: string;
   clientName: string;
   balance: number;
+  accountUrl?: string;
 }
 
 const NewAssignedAccounts: React.FC<{ onBack: () => void; currentUser: AppUser }> = ({ onBack, currentUser }) => {
@@ -49,7 +50,8 @@ const NewAssignedAccounts: React.FC<{ onBack: () => void; currentUser: AppUser }
         assignedTo: item.assignedTo,
         businessName: item.businessName,
         clientName: item.clientName,
-        balance: item.balance
+        balance: item.balance,
+        accountUrl: item.accountUrl
       }));
   }, [newAssignedAccounts.data, currentUser.name]);
 
@@ -79,14 +81,15 @@ const NewAssignedAccounts: React.FC<{ onBack: () => void; currentUser: AppUser }
   };
 
   const handleExport = () => {
-    const headers = ["Date Assigned", "Account Number", "Assigned To", "Business Name", "Client Name", "Balance"];
+    const headers = ["Date Assigned", "Account Number", "Assigned To", "Business Name", "Client Name", "Balance", "Account URL"];
     const rows = filteredData.map(r => [ 
       `"${r.dateAssigned}"`, 
       `"${r.accountNumber}"`, 
       `"${r.assignedTo}"`, 
       `"${r.businessName}"`, 
       `"${r.clientName}"`, 
-      r.balance.toFixed(2) 
+      r.balance.toFixed(2),
+      `"${r.accountUrl || ''}"`
     ]);
     const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -146,7 +149,15 @@ const NewAssignedAccounts: React.FC<{ onBack: () => void; currentUser: AppUser }
               ) : filteredData.length > 0 ? filteredData.map((row) => (
                 <tr key={row.id} className="hover:bg-surface-100 transition-colors group">
                   <td className="px-6 py-4 font-bold text-text-main">{new Date(row.dateAssigned).toLocaleDateString()}</td>
-                  <td className="px-6 py-4 font-black text-blue-600">{row.accountNumber}</td>
+                  <td className="px-6 py-4 font-black text-blue-600">
+                    {row.accountUrl ? (
+                      <a href={row.accountUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                        {row.accountNumber}
+                      </a>
+                    ) : (
+                      row.accountNumber
+                    )}
+                  </td>
                   <td className="px-6 py-4 font-bold text-text-main">{row.assignedTo}</td>
                   <td className="px-6 py-4 font-bold text-text-main">{row.businessName}</td>
                   <td className="px-6 py-4 font-bold text-text-main">{row.clientName}</td>

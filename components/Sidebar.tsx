@@ -253,6 +253,17 @@ const Sidebar: React.FC<SidebarProps> = ({
             />
           )}
 
+          {/* 8.1 Collector Inventory */}
+          {permissions.viewCollectorInventory && (
+            <NavItem 
+              icon={Package} 
+              label="My Inventory" 
+              isActive={activeTab === 'collector-inventory'} 
+              isCollapsed={isCollapsed}
+              onClick={() => onResetToMainTab('collector-inventory')} 
+            />
+          )}
+
           {/* 8.5 Campaign */}
           {permissions.viewCampaign && (
             <NavItem 

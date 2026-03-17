@@ -1,7 +1,34 @@
 /// <reference types="vite/client" />
-import { RPC_SCRIPT_URL, REMINDERS_SCRIPT_URL, POSTDATES_SCRIPT_URL, EXECUTIVE_SCRIPT_URL, HOME_SCRIPT_URL, COLLECTOR_SCRIPT_URL, MIRROR_SCRIPT_URL, CALL_PERFORMANCE_SCRIPT_URL, FLAGGED_ACCOUNTS_SCRIPT_URL, NEW_IMPORTS_SCRIPT_URL, OVERDUE_PAYMENTS_SCRIPT_URL, INVENTORY_SCRIPT_URL, INDIVIDUAL_COLLECTOR_SCRIPT_URL, ACCOUNT_CLOSURE_AUDIT_SCRIPT_URL, BILLING_AUDIT_SCRIPT_URL, AUDIT_SCORING_SCRIPT_URL, COLLECTOR_HOME_SCRIPT_URL, NEW_ASSIGNED_ACCOUNTS_SCRIPT_URL } from '../constants';
+import { RPC_SCRIPT_URL, REMINDERS_SCRIPT_URL, POSTDATES_SCRIPT_URL, EXECUTIVE_SCRIPT_URL, HOME_SCRIPT_URL, COLLECTOR_SCRIPT_URL, MIRROR_SCRIPT_URL, CALL_PERFORMANCE_SCRIPT_URL, FLAGGED_ACCOUNTS_SCRIPT_URL, NEW_IMPORTS_SCRIPT_URL, OVERDUE_PAYMENTS_SCRIPT_URL, INVENTORY_SCRIPT_URL, COLLECTOR_INVENTORY_SCRIPT_URL, INDIVIDUAL_COLLECTOR_SCRIPT_URL, ACCOUNT_CLOSURE_AUDIT_SCRIPT_URL, BILLING_AUDIT_SCRIPT_URL, AUDIT_SCORING_SCRIPT_URL, COLLECTOR_HOME_SCRIPT_URL, NEW_ASSIGNED_ACCOUNTS_SCRIPT_URL } from '../constants';
 
 export const sheetService = {
+  async getCollectorInventoryData(collectorName: string) {
+    try {
+      if (!COLLECTOR_INVENTORY_SCRIPT_URL || COLLECTOR_INVENTORY_SCRIPT_URL.includes('_X_')) return { data: [], lastUpdated: null };
+      
+      const url = new URL(COLLECTOR_INVENTORY_SCRIPT_URL);
+      url.searchParams.set('action', 'getCollectorInventory');
+      url.searchParams.set('collectorName', collectorName);
+      url.searchParams.set('t', Date.now().toString());
+
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        cache: 'no-store'
+      });
+      
+      if (!response.ok) throw new Error(`HTTP ${response.status}: Failed to fetch collector inventory data`);
+      const result = await response.json();
+      
+      if (result.status === 'success' && Array.isArray(result.data)) {
+        return { data: result.data, lastUpdated: Date.now() };
+      }
+      return { data: [], lastUpdated: null };
+    } catch (error) {
+      console.error('Error fetching collector inventory data:', error);
+      return { data: [], lastUpdated: null };
+    }
+  },
+
   async getNewAssignedAccounts() {
     try {
       if (!NEW_ASSIGNED_ACCOUNTS_SCRIPT_URL) return { data: [], lastUpdated: null };
@@ -237,7 +264,7 @@ export const sheetService = {
       const response = await fetch(RPC_SCRIPT_URL, {
         method: 'POST',
         credentials: 'omit',
-        headers: { 'Content-Type': 'text/plain' },
+        redirect: 'follow', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: JSON.stringify({ action: 'getRPCLogs' })
       });
       const result = await response.json();
@@ -256,7 +283,7 @@ export const sheetService = {
       const response = await fetch(RPC_SCRIPT_URL, {
         method: 'POST',
         credentials: 'omit',
-        headers: { 'Content-Type': 'text/plain' },
+        redirect: 'follow', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: JSON.stringify({ action: 'createRPCLog', payload }),
       });
       const result = await response.json();
@@ -272,7 +299,7 @@ export const sheetService = {
       const response = await fetch(RPC_SCRIPT_URL, {
         method: 'POST',
         credentials: 'omit',
-        headers: { 'Content-Type': 'text/plain' },
+        redirect: 'follow', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: JSON.stringify({ action: 'updateRPCLog', payload }),
       });
       const result = await response.json();
@@ -288,7 +315,7 @@ export const sheetService = {
       const response = await fetch(RPC_SCRIPT_URL, {
         method: 'POST',
         credentials: 'omit',
-        headers: { 'Content-Type': 'text/plain' },
+        redirect: 'follow', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: JSON.stringify({ action: 'deleteRPCLog', payload: { id } }),
       });
       const result = await response.json();
@@ -305,7 +332,7 @@ export const sheetService = {
       const response = await fetch(REMINDERS_SCRIPT_URL, {
         method: 'POST',
         credentials: 'omit',
-        headers: { 'Content-Type': 'text/plain' },
+        redirect: 'follow', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: JSON.stringify({ action: 'getReminders' })
       });
       const result = await response.json();
@@ -325,7 +352,7 @@ export const sheetService = {
       const response = await fetch(REMINDERS_SCRIPT_URL, {
         method: 'POST',
         credentials: 'omit',
-        headers: { 'Content-Type': 'text/plain' },
+        redirect: 'follow', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: JSON.stringify({ action: 'createReminder', payload }),
       });
       const result = await response.json();
@@ -343,7 +370,7 @@ export const sheetService = {
       let response = await fetch(REMINDERS_SCRIPT_URL, {
         method: 'POST',
         credentials: 'omit',
-        headers: { 'Content-Type': 'text/plain' },
+        redirect: 'follow', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: JSON.stringify({ action: 'updateReminder', payload }),
       });
       let result = await response.json();
@@ -354,7 +381,7 @@ export const sheetService = {
           response = await fetch(REMINDERS_SCRIPT_URL, {
             method: 'POST',
             credentials: 'omit',
-            headers: { 'Content-Type': 'text/plain' },
+            redirect: 'follow', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: JSON.stringify({ action: 'updateReminder', payload: { ...payload, id: Number(payload.id) } }),
           });
           result = await response.json();
@@ -362,7 +389,7 @@ export const sheetService = {
           response = await fetch(REMINDERS_SCRIPT_URL, {
             method: 'POST',
             credentials: 'omit',
-            headers: { 'Content-Type': 'text/plain' },
+            redirect: 'follow', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: JSON.stringify({ action: 'updateReminder', payload: { ...payload, id: String(payload.id) } }),
           });
           result = await response.json();
@@ -383,7 +410,7 @@ export const sheetService = {
       let response = await fetch(REMINDERS_SCRIPT_URL, {
         method: 'POST',
         credentials: 'omit',
-        headers: { 'Content-Type': 'text/plain' },
+        redirect: 'follow', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: JSON.stringify({ action: 'deleteReminder', payload: { id } }),
       });
       let result = await response.json();
@@ -394,7 +421,7 @@ export const sheetService = {
           response = await fetch(REMINDERS_SCRIPT_URL, {
             method: 'POST',
             credentials: 'omit',
-            headers: { 'Content-Type': 'text/plain' },
+            redirect: 'follow', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: JSON.stringify({ action: 'deleteReminder', payload: { id: Number(id) } }),
           });
           result = await response.json();
@@ -402,7 +429,7 @@ export const sheetService = {
           response = await fetch(REMINDERS_SCRIPT_URL, {
             method: 'POST',
             credentials: 'omit',
-            headers: { 'Content-Type': 'text/plain' },
+            redirect: 'follow', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: JSON.stringify({ action: 'deleteReminder', payload: { id: String(id) } }),
           });
           result = await response.json();
@@ -422,7 +449,7 @@ export const sheetService = {
       const response = await fetch(POSTDATES_SCRIPT_URL, {
         method: 'POST',
         credentials: 'omit',
-        headers: { 'Content-Type': 'text/plain' },
+        redirect: 'follow', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: JSON.stringify({ action: 'getPostdatesData' })
       });
       const result = await response.json();
@@ -569,7 +596,7 @@ export const sheetService = {
     try {
       const response = await fetch(OVERDUE_PAYMENTS_SCRIPT_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
+        redirect: 'follow', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: JSON.stringify({ action: 'getPayments' })
       });
       if (!response.ok) throw new Error('Failed to fetch overdue payments');

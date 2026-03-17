@@ -161,6 +161,12 @@ interface DataContextType {
     lastFetched: number | null;
     error: string | null;
   };
+  collectorInventory: {
+    data: any[];
+    isLoading: boolean;
+    lastFetched: number | null;
+    error: string | null;
+  };
   fetchPostdates: (force?: boolean) => Promise<void>;
   fetchRPCLogs: (force?: boolean) => Promise<void>;
   fetchReminders: (force?: boolean) => Promise<void>;
@@ -182,6 +188,7 @@ interface DataContextType {
   fetchAuditScoring: (collectorName: string, force?: boolean) => Promise<void>;
   fetchCollectorHome: (collectorName: string, force?: boolean) => Promise<void>;
   fetchNewAssignedAccounts: (force?: boolean) => Promise<void>;
+  fetchCollectorInventory: (collectorName: string, force?: boolean) => Promise<void>;
   updateRPCLogsLocal: (logs: RPCLog[]) => void;
   updateRemindersLocal: (reminders: Reminder[]) => void;
 }
@@ -332,6 +339,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [newAssignedAccounts, setNewAssignedAccounts] = useState<DataContextType['newAssignedAccounts']>({
+    data: [],
+    isLoading: false,
+    lastFetched: null,
+    error: null,
+  });
+
+  const [collectorInventory, setCollectorInventory] = useState<DataContextType['collectorInventory']>({
     data: [],
     isLoading: false,
     lastFetched: null,
@@ -950,12 +964,34 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setNewAssignedAccounts(prev => ({ ...prev, isLoading: true, error: null }));
     try {
       const result = await sheetService.getNewAssignedAccounts();
-      setNewAssignedAccounts({ ...result, isLoading: false, error: null });
+      setNewAssignedAccounts({
+        data: result.data,
+        isLoading: false,
+        lastFetched: Date.now(),
+        error: null
+      });
     } catch (error) {
       console.error('Error fetching new assigned accounts:', error);
       setNewAssignedAccounts(prev => ({ ...prev, isLoading: false, error: (error as Error).message }));
     }
   }, [newAssignedAccounts.lastFetched]);
+
+  const fetchCollectorInventory = useCallback(async (collectorName: string, force = false) => {
+    if (!force && collectorInventory.lastFetched && Date.now() - collectorInventory.lastFetched < 300000) return;
+    setCollectorInventory(prev => ({ ...prev, isLoading: true, error: null }));
+    try {
+      const result = await sheetService.getCollectorInventoryData(collectorName);
+      setCollectorInventory({
+        data: result.data,
+        isLoading: false,
+        lastFetched: Date.now(),
+        error: null
+      });
+    } catch (error) {
+      console.error('Error fetching collector inventory:', error);
+      setCollectorInventory(prev => ({ ...prev, isLoading: false, error: (error as Error).message }));
+    }
+  }, [collectorInventory.lastFetched]);
 
   const updateRPCLogsLocal = useCallback((logs: RPCLog[]) => {
     setRpcLogs(prev => ({
@@ -996,6 +1032,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       auditScoring,
       collectorHome,
       newAssignedAccounts,
+      collectorInventory,
       fetchPostdates, 
       fetchRPCLogs,
       fetchReminders,
@@ -1017,6 +1054,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       fetchAuditScoring,
       fetchCollectorHome,
       fetchNewAssignedAccounts,
+      fetchCollectorInventory,
       updateRPCLogsLocal,
       updateRemindersLocal
     }}>

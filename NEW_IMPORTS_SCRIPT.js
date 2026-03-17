@@ -26,14 +26,17 @@ function getImports() {
       .setMimeType(ContentService.MimeType.JSON);
   }
   
-  const data = sheet.getDataRange().getValues();
+  const range = sheet.getDataRange();
+  const data = range.getValues();
+  const richTextValues = range.getRichTextValues();
+  
   if (data.length <= 1) {
     return ContentService.createTextOutput(JSON.stringify({ status: 'success', data: [] }))
       .setMimeType(ContentService.MimeType.JSON);
   }
   
-  const headers = data[0];
   const rows = data.slice(1);
+  const richTextRows = richTextValues.slice(1);
   
   const imports = rows.map((row, index) => {
     // Column A: Client Claim # (index 0)
@@ -43,6 +46,10 @@ function getImports() {
     // Column E: Client Name (index 4)
     // Column H: Balance (index 7)
     
+    // Extract link from Column B (index 1)
+    const richText = richTextRows[index][1];
+    const link = richText ? richText.getLinkUrl() : null;
+
     return {
       id: (index + 1).toString(),
       clientClaimNumber: row[0] || '',
@@ -50,7 +57,8 @@ function getImports() {
       dateImported: row[2] instanceof Date ? Utilities.formatDate(row[2], Session.getScriptTimeZone(), "yyyy-MM-dd") : row[2] || '',
       businessName: row[3] || '',
       clientName: row[4] || '',
-      balance: parseFloat(row[7]) || 0
+      balance: parseFloat(row[7]) || 0,
+      accountUrl: link
     };
   });
   

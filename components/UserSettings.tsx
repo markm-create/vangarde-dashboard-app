@@ -203,8 +203,9 @@ const UserSettings: React.FC<UserSettingsProps> = ({ isDarkMode, onToggleDarkMod
           method: "POST",
           mode: 'cors',
           credentials: 'omit',
+          redirect: 'follow',
           headers: {
-            "Content-Type": "text/plain",
+            "Content-Type": "application/x-www-form-urlencoded",
           },
           body: JSON.stringify({ action: "deleteUser", email: targetEmail })
         });
@@ -313,8 +314,9 @@ const UserSettings: React.FC<UserSettingsProps> = ({ isDarkMode, onToggleDarkMod
         method: "POST",
         mode: 'cors',
         credentials: 'omit',
+        redirect: 'follow',
         headers: {
-          "Content-Type": "text/plain",
+          "Content-Type": "application/x-www-form-urlencoded",
         },
         body: JSON.stringify(cloudPayload)
       });
@@ -707,6 +709,7 @@ const UserSettings: React.FC<UserSettingsProps> = ({ isDarkMode, onToggleDarkMod
                                 <ToggleItem label="Collector Home" desc="Collector Landing Page" active={effectivePermissions.viewCollectorHome} onToggle={() => handlePermissionToggle('viewCollectorHome')} />
                                 <ToggleItem label="Audits" desc="Compliance" active={effectivePermissions.viewAuditDashboard} onToggle={() => handlePermissionToggle('viewAuditDashboard')} />
                                 <ToggleItem label="Inventory" desc="Assets" active={effectivePermissions.viewInventory} onToggle={() => handlePermissionToggle('viewInventory')} />
+                                <ToggleItem label="Collector Inventory" desc="Personal Assets" active={effectivePermissions.viewCollectorInventory} onToggle={() => handlePermissionToggle('viewCollectorInventory')} />
                                 <ToggleItem label="Campaign" desc="Outreach Hub" active={effectivePermissions.viewCampaign} onToggle={() => handlePermissionToggle('viewCampaign')} />
                                 <ToggleItem label="Settings" desc="System Config" active={effectivePermissions.viewSettings} onToggle={() => handlePermissionToggle('viewSettings')} />
                             </div>

@@ -22,6 +22,7 @@ interface NewImport {
   businessName: string;
   clientName: string;
   balance: number;
+  accountUrl?: string;
 }
 
 const NewImportsReport: React.FC<{ onBack: () => void; canExport: boolean }> = ({ onBack, canExport }) => {
@@ -43,7 +44,8 @@ const NewImportsReport: React.FC<{ onBack: () => void; canExport: boolean }> = (
       accountNumber: item.accountNumber != null ? String(item.accountNumber) : '',
       businessName: item.businessName != null ? String(item.businessName) : '',
       clientName: item.clientName != null ? String(item.clientName) : '',
-      balance: item.balance != null ? Number(item.balance) : 0
+      balance: item.balance != null ? Number(item.balance) : 0,
+      accountUrl: item.accountUrl
     }));
 
     return mappedData.filter(item => {
@@ -102,8 +104,16 @@ const NewImportsReport: React.FC<{ onBack: () => void; canExport: boolean }> = (
   };
 
   const handleExport = () => {
-    const headers = ["Date Imported", "Client Claim Number", "Account Number", "Business Name", "Client Name", "Balance"];
-    const rows = filteredData.map(r => [ `"${formatDate(r.dateImported)}"`, `"${r.clientClaimNumber}"`, `"${r.accountNumber}"`, `"${r.businessName}"`, `"${r.clientName}"`, r.balance.toFixed(2) ]);
+    const headers = ["Date Imported", "Client Claim Number", "Account Number", "Business Name", "Client Name", "Balance", "Account URL"];
+    const rows = filteredData.map(r => [ 
+      `"${formatDate(r.dateImported)}"`, 
+      `"${r.clientClaimNumber}"`, 
+      `"${r.accountNumber}"`, 
+      `"${r.businessName}"`, 
+      `"${r.clientName}"`, 
+      r.balance.toFixed(2),
+      `"${r.accountUrl || ''}"`
+    ]);
     const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
@@ -182,7 +192,15 @@ const NewImportsReport: React.FC<{ onBack: () => void; canExport: boolean }> = (
                   <tr key={row.id} className="hover:bg-surface-100 transition-colors group">
                     <td className="px-6 py-4 font-bold text-text-main">{formatDate(row.dateImported)}</td>
                     <td className="px-6 py-4 text-text-muted">{row.clientClaimNumber}</td>
-                    <td className="px-6 py-4 font-black text-indigo-600">{row.accountNumber}</td>
+                    <td className="px-6 py-4 font-black text-indigo-600">
+                      {row.accountUrl ? (
+                        <a href={row.accountUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                          {row.accountNumber}
+                        </a>
+                      ) : (
+                        row.accountNumber
+                      )}
+                    </td>
                     <td className="px-6 py-4 font-bold text-text-main">{row.businessName}</td>
                     <td className="px-6 py-4 text-text-muted">{row.clientName}</td>
                     <td className="px-6 py-4 text-right font-black text-text-main">${row.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>

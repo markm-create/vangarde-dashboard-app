@@ -77,7 +77,7 @@ const BillingAuditReport: React.FC<{ onBack: () => void; canExport: boolean }> =
   };
 
   const handleExport = () => {
-    const headers = ["Account #", "Agent Name", "Client Name", "Account Status", "Agreement Amount", "Overdue Amount", "Overdue Date", "PPA Action", "Audit Comments"];
+    const headers = ["Account #", "Agent Name", "Client Name", "Account Status", "Agreement Amount", "Overdue Amount", "Overdue Date", "PPA Action", "Audit Comments", "Account URL"];
     const rows = filteredData.map(r => [ 
       `"${r.accountNumber}"`, 
       `"${r.agentName}"`, 
@@ -87,7 +87,8 @@ const BillingAuditReport: React.FC<{ onBack: () => void; canExport: boolean }> =
       r.overdueAmount.toFixed(2),
       `"${r.overdueDate}"`,
       `"${r.ppaAction}"`,
-      `"${r.comments}"`
+      `"${r.comments}"`,
+      `"${r.accountUrl || ''}"`
     ]);
     const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -191,7 +192,15 @@ const BillingAuditReport: React.FC<{ onBack: () => void; canExport: boolean }> =
               <tbody className="divide-y divide-border-subtle text-[12px]">
                 {filteredData.length > 0 ? filteredData.map((row) => (
                   <tr key={row.id} className="hover:bg-surface-100 transition-colors group">
-                    <td className="px-6 py-4 font-black text-indigo-600">{row.accountNumber}</td>
+                    <td className="px-6 py-4 font-black text-indigo-600">
+                      {row.accountUrl ? (
+                        <a href={row.accountUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                          {row.accountNumber}
+                        </a>
+                      ) : (
+                        row.accountNumber
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-text-muted">{row.agentName}</td>
                     <td className="px-6 py-4 font-bold text-text-main">{row.clientName}</td>
                     <td className="px-6 py-4">

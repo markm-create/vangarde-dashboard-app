@@ -31,7 +31,9 @@ function processRequest(e) {
 
     // Read from Row 2 (assuming Row 1 is headers)
     // Range: A2 to L (Column 1 to 12)
-    const vals = sheet.getRange(2, 1, lastRow - 1, 12).getValues();
+    const range = sheet.getRange(2, 1, lastRow - 1, 12);
+    const vals = range.getValues();
+    const richTextValues = range.getRichTextValues();
     
     const data = vals.map((row, index) => {
       const accNum = (row[0] || "").toString().trim();
@@ -45,6 +47,10 @@ function processRequest(e) {
         return val.toString();
       };
 
+      // Extract link from Column A (index 0)
+      const richText = richTextValues[index][0];
+      const link = richText ? richText.getLinkUrl() : null;
+
       return {
         id: (index + 1).toString(),
         accountNumber: accNum,
@@ -54,7 +60,8 @@ function processRequest(e) {
         agentName: (row[11] || "").toString(), // Col L
         balanceDue: parseFloat(row[6]) || 0,   // Col G
         accountAge: parseInt(row[7]) || 0,     // Col H
-        lastWorkedDate: fmtDate(row[5])        // Col F
+        lastWorkedDate: fmtDate(row[5]),        // Col F
+        accountUrl: link
       };
     }).filter(x => x);
 

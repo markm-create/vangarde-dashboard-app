@@ -22,6 +22,7 @@ interface OverduePayment {
   accountStatus: string;
   currentBalanceDue: number;
   paymentPlanOverdue: number;
+  accountUrl?: string;
 }
 
 const OverduePaymentsReport: React.FC<{ onBack: () => void; canExport: boolean }> = ({ onBack, canExport }) => {
@@ -44,7 +45,8 @@ const OverduePaymentsReport: React.FC<{ onBack: () => void; canExport: boolean }
       clientName: String(item.clientName || ''),
       accountStatus: String(item.accountStatus || ''),
       currentBalanceDue: Number(item.currentBalanceDue || 0),
-      paymentPlanOverdue: Number(item.paymentPlanOverdue || 0)
+      paymentPlanOverdue: Number(item.paymentPlanOverdue || 0),
+      accountUrl: item.accountUrl
     }));
 
     return mappedData.filter(item => {
@@ -107,7 +109,7 @@ const OverduePaymentsReport: React.FC<{ onBack: () => void; canExport: boolean }
   };
 
   const handleExport = () => {
-    const headers = ["Plan Pmt. Date Due", "Account Number", "Collector Name", "Client Name", "Account Status", "Current Balance Due", "Payment Plan Overdue"];
+    const headers = ["Plan Pmt. Date Due", "Account Number", "Collector Name", "Client Name", "Account Status", "Current Balance Due", "Payment Plan Overdue", "Account URL"];
     const rows = filteredData.map(r => [ 
       `"${formatDate(r.planPmtDateDue)}"`, 
       `"${r.accountNumber}"`, 
@@ -115,7 +117,8 @@ const OverduePaymentsReport: React.FC<{ onBack: () => void; canExport: boolean }
       `"${r.clientName}"`, 
       `"${r.accountStatus}"`, 
       r.currentBalanceDue.toFixed(2),
-      r.paymentPlanOverdue.toFixed(2)
+      r.paymentPlanOverdue.toFixed(2),
+      `"${r.accountUrl || ''}"`
     ]);
     const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -195,7 +198,15 @@ const OverduePaymentsReport: React.FC<{ onBack: () => void; canExport: boolean }
                 {filteredData.length > 0 ? filteredData.map((row) => (
                   <tr key={row.id} className="hover:bg-surface-100 transition-colors group">
                     <td className="px-6 py-4 font-bold text-text-main">{formatDate(row.planPmtDateDue)}</td>
-                    <td className="px-6 py-4 font-black text-indigo-600">{row.accountNumber}</td>
+                    <td className="px-6 py-4 font-black text-indigo-600">
+                      {row.accountUrl ? (
+                        <a href={row.accountUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                          {row.accountNumber}
+                        </a>
+                      ) : (
+                        row.accountNumber
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-text-muted">{row.collectorName}</td>
                     <td className="px-6 py-4 font-bold text-text-main">{row.clientName}</td>
                     <td className="px-6 py-4">

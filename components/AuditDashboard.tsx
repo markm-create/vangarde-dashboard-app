@@ -1015,7 +1015,15 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
     if (viewType === 'onboarding') {
       return (
         <tr key={i} className="hover:bg-surface-100 transition-colors">
-          <td className="px-6 py-4 font-black text-indigo-600">{row.accountNumber}</td>
+          <td className="px-6 py-4 font-black text-indigo-600">
+            {row.accountUrl ? (
+              <a href={row.accountUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                {row.accountNumber}
+              </a>
+            ) : (
+              row.accountNumber
+            )}
+          </td>
           <td className="px-6 py-4 font-bold text-text-main">{row.collectorName}</td>
           <td className="px-6 py-4 text-text-muted">{formatLongDate(row.dateAssigned)}</td>
           <td className="px-6 py-4 text-text-muted">{formatLongDate(row.dateActivated)}</td>
@@ -1040,7 +1048,15 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
       return (
         <tr key={i} className="hover:bg-surface-100 transition-colors">
           <td className="px-6 py-4 text-text-muted font-inter">{row.transactionDate}</td>
-          <td className="px-6 py-4 font-black text-indigo-600">{row.accountNumber}</td>
+          <td className="px-6 py-4 font-black text-indigo-600">
+            {row.accountUrl ? (
+              <a href={row.accountUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                {row.accountNumber}
+              </a>
+            ) : (
+              row.accountNumber
+            )}
+          </td>
           <td className="px-6 py-4 font-bold text-text-main">{row.collectorName || row.agentName}</td>
           <td className="px-6 py-4 text-right font-inter font-bold">${(row.amount || row.paymentAmount || 0).toFixed(2)}</td>
           <td className="px-6 py-4">
@@ -1056,7 +1072,15 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
     if (viewType === 'billing') {
       return (
         <tr key={i} className="hover:bg-surface-100 transition-colors">
-          <td className="px-6 py-4 font-black text-indigo-600">{row.accountNumber}</td>
+          <td className="px-6 py-4 font-black text-indigo-600">
+            {row.accountUrl ? (
+              <a href={row.accountUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                {row.accountNumber}
+              </a>
+            ) : (
+              row.accountNumber
+            )}
+          </td>
           <td className="px-6 py-4 font-bold text-text-main">{row.agentName}</td>
           <td className="px-6 py-4 text-text-muted">{row.clientName}</td>
           <td className="px-6 py-4">
@@ -1081,7 +1105,15 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
     if (viewType === 'aee_rtp') {
       return (
         <tr key={i} className="hover:bg-surface-100 transition-colors">
-          <td className="px-6 py-4 font-black text-indigo-600">{row.accountNumber}</td>
+          <td className="px-6 py-4 font-black text-indigo-600">
+            {row.accountUrl ? (
+              <a href={row.accountUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                {row.accountNumber}
+              </a>
+            ) : (
+              row.accountNumber
+            )}
+          </td>
           <td className="px-6 py-4 font-bold text-text-main">{row.collectorName || row.agentName}</td>
           <td className="px-6 py-4">
             <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-surface-100 text-text-muted">{row.claimStatus || row.accountStatus}</span>
@@ -1102,7 +1134,15 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
     if (viewType === 'rpc') {
       return (
         <tr key={i} className="hover:bg-surface-100 transition-colors">
-          <td className="px-6 py-4 font-black text-indigo-600">{row.accountNumber}</td>
+          <td className="px-6 py-4 font-black text-indigo-600">
+            {row.accountUrl ? (
+              <a href={row.accountUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                {row.accountNumber}
+              </a>
+            ) : (
+              row.accountNumber
+            )}
+          </td>
           <td className="px-6 py-4 font-bold text-text-main">{row.agentName}</td>
           <td className="px-6 py-4 text-text-muted">{row.callDate}</td>
           <td className="px-6 py-4 text-text-muted">{row.rpcType}</td>
@@ -1118,7 +1158,15 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
     }
     return (
       <tr key={i} className="hover:bg-surface-100 transition-colors">
-        <td className="px-6 py-4 font-black text-indigo-600">{row.accountNumber}</td>
+        <td className="px-6 py-4 font-black text-indigo-600">
+          {row.accountUrl ? (
+            <a href={row.accountUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
+              {row.accountNumber}
+            </a>
+          ) : (
+            row.accountNumber
+          )}
+        </td>
         <td className="px-6 py-4 font-bold text-text-main">{row.agentName}</td>
         <td className="px-6 py-4 text-text-muted">{row.dateAudited}</td>
         <td className="px-6 py-4">
