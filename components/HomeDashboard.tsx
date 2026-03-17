@@ -229,7 +229,7 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
                 <div className="absolute inset-0 bg-gradient-to-br from-[#818cf8] via-[#6366f1] to-[#4f46e5]"></div>
                 <div className="absolute inset-0"><svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 1000 400"><path d="M0,400 L0,250 C150,220 300,100 450,250 C600,400 750,150 1000,200 L1000,400 Z" fill="#a5b4fc" fillOpacity="0.3" /><path d="M0,400 L0,350 C250,350 400,200 600,300 C750,380 850,250 1000,300 L1000,400 Z" fill="#6366f1" fillOpacity="0.5" /></svg></div>
                 <div className="relative z-10 pl-12 text-white flex flex-col justify-center h-full">
-                    <h1 className="text-4xl font-black mb-2 tracking-tight">Hello {currentUser.name.split(' ')[0]}!</h1>
+                    <h1 className="text-4xl font-black mb-2 tracking-tight">Hello, {currentUser.name.split(' ')[0]}!</h1>
                     <p className="text-indigo-50 font-bold text-lg mb-6 opacity-90">Let's get the collection cycle started!</p>
                     <div className="flex gap-4">
                         <button onClick={() => onNavigate('collections-history')} className="bg-white text-indigo-600 px-8 py-3 rounded-full text-sm font-black uppercase tracking-widest shadow-xl hover:bg-indigo-50 hover:scale-105 transition-all flex items-center gap-3 w-fit">Check Collections <ArrowRight size={18} strokeWidth={3} /></button>

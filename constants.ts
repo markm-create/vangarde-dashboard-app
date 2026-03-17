@@ -13,8 +13,8 @@ const getValidUrl = (envUrl: string | undefined | boolean, fallbackUrl: string):
 export const RPC_SCRIPT_URL = getValidUrl(import.meta.env.VITE_RPC_LOGS_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbxdx_fYfnH1C5fXfeJU00ccjoQXLp1W4Wn3SqKJJbHcpgW46V9rl85BA2RPw9LeGfLGQg/exec");
 export const REMINDERS_SCRIPT_URL = getValidUrl(import.meta.env.VITE_REMINDERS_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbxdwxYx9SgqSu8_IJceIZO28ohsyo92clegGIL_a-qjFvbHnPhCOeu-AHsotF-1PCaF/exec");
 export const POSTDATES_SCRIPT_URL = getValidUrl(import.meta.env.VITE_POSTDATES_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbw1KZjg2vsOzroiYt6wgCg1y93yJK58MUkaZ6Aj8svMWvRNYzS40VKdNQhedsP-62DP/exec");
-export const USER_SCRIPT_URL = getValidUrl(import.meta.env.VITE_USER_LOGIN_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbw1KZjg2vsOzroiYt6wgCg1y93yJK58MUkaZ6Aj8svMWvRNYzS40VKdNQhedsP-62DP/exec");
-export const PROJECTION_SCRIPT_URL = getValidUrl(import.meta.env.VITE_PROJECTION_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbz_K6Y_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z_Z/exec");
+export const USER_SCRIPT_URL = getValidUrl(import.meta.env.VITE_USER_LOGIN_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbxT86FxniOBtG3kMZvugCSThMApwSnmXeUOtCSNmzfX7G1SLuQ9PjetGUy8IAaHsUP-2w/exec");
+export const PROJECTION_SCRIPT_URL = getValidUrl(import.meta.env.VITE_PROJECTION_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbyH8AGvP_vYcVXh_-JTYrfFFUg2-wPqHUf7VlDRKruRmkFPiECM-zkST-RLCejB8djh/exec");
 export const DECLINE_RECOVERY_SCRIPT_URL = getValidUrl(import.meta.env.VITE_DECLINE_RECOVERY_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbyqpiFO_lGT41RMQWzXJp1kU5ZOFDjzfB51rbIhe5uqZOigrQlATR4asqwaZ6aIleSYXg/exec");
 
 // Executive Dashboard Script URL (Isolated from other services)

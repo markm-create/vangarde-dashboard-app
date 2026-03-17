@@ -6,8 +6,11 @@ export const sheetService = {
     try {
       if (!NEW_ASSIGNED_ACCOUNTS_SCRIPT_URL) return { data: [], lastUpdated: null };
       
-      const urlWithParams = `${NEW_ASSIGNED_ACCOUNTS_SCRIPT_URL}${NEW_ASSIGNED_ACCOUNTS_SCRIPT_URL.includes('?') ? '&' : '?'}action=getNewAssignedAccounts&t=${Date.now()}`;
-      const response = await fetch(urlWithParams, {
+      const url = new URL(NEW_ASSIGNED_ACCOUNTS_SCRIPT_URL);
+      url.searchParams.set('action', 'getNewAssignedAccounts');
+      url.searchParams.set('t', Date.now().toString());
+
+      const response = await fetch(url.toString(), {
         method: 'GET',
         cache: 'no-store'
       });
@@ -21,7 +24,10 @@ export const sheetService = {
       return { data: [], lastUpdated: null };
     } catch (error) {
       console.error('Error fetching new assigned accounts:', error);
-      return { data: [], lastUpdated: null };
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(message === 'Failed to fetch' 
+        ? 'Connection Blocked. Please check if the Google Script is deployed to "Anyone".' 
+        : message);
     }
   },
 
@@ -75,18 +81,30 @@ export const sheetService = {
     try {
       if (!FLAGGED_ACCOUNTS_SCRIPT_URL || FLAGGED_ACCOUNTS_SCRIPT_URL.includes('_X_')) return { data: [], lastUpdated: null };
       
-      const urlWithParams = `${FLAGGED_ACCOUNTS_SCRIPT_URL}${FLAGGED_ACCOUNTS_SCRIPT_URL.includes('?') ? '&' : '?'}t=${Date.now()}`;
-      const response = await fetch(urlWithParams, {
+      const url = new URL(FLAGGED_ACCOUNTS_SCRIPT_URL);
+      url.searchParams.set('t', Date.now().toString());
+
+      const response = await fetch(url.toString(), {
         method: 'GET',
         cache: 'no-store'
       });
       
       if (!response.ok) throw new Error(`Sync Error: ${response.status}`);
       const result = await response.json();
-      return result;
+      
+      // Handle both {status: 'success', data: [...]} and raw {data: [...]} formats
+      const actualData = result.data || (Array.isArray(result) ? result : []);
+      
+      return { 
+        data: actualData, 
+        lastUpdated: new Date().toISOString() 
+      };
     } catch (error) {
       console.error('Error fetching flagged accounts:', error);
-      return { data: [], lastUpdated: null };
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(message === 'Failed to fetch' 
+        ? 'Connection Blocked. Please check if the Google Script is deployed to "Anyone".' 
+        : message);
     }
   },
 
@@ -94,18 +112,30 @@ export const sheetService = {
     try {
       if (!CALL_PERFORMANCE_SCRIPT_URL || CALL_PERFORMANCE_SCRIPT_URL.includes('_X_')) return { data: [], lastUpdated: null };
       
-      const urlWithParams = `${CALL_PERFORMANCE_SCRIPT_URL}${CALL_PERFORMANCE_SCRIPT_URL.includes('?') ? '&' : '?'}t=${Date.now()}`;
-      const response = await fetch(urlWithParams, {
+      const url = new URL(CALL_PERFORMANCE_SCRIPT_URL);
+      url.searchParams.set('t', Date.now().toString());
+
+      const response = await fetch(url.toString(), {
         method: 'GET',
         cache: 'no-store'
       });
       
       if (!response.ok) throw new Error(`Sync Error: ${response.status}`);
       const result = await response.json();
-      return result;
+      
+      // Handle both {status: 'success', data: [...]} and raw {data: [...]} formats
+      const actualData = result.data || (Array.isArray(result) ? result : []);
+      
+      return { 
+        data: actualData, 
+        lastUpdated: new Date().toISOString() 
+      };
     } catch (error) {
       console.error('Error fetching call performance:', error);
-      return { data: [], lastUpdated: null };
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(message === 'Failed to fetch' 
+        ? 'Connection Blocked. Please check if the Google Script is deployed to "Anyone".' 
+        : message);
     }
   },
 
@@ -511,9 +541,11 @@ export const sheetService = {
     try {
       if (!NEW_IMPORTS_SCRIPT_URL) return [];
       
-      const urlWithParams = `${NEW_IMPORTS_SCRIPT_URL}${NEW_IMPORTS_SCRIPT_URL.includes('?') ? '&' : '?'}action=getImports&t=${Date.now()}`;
+      const url = new URL(NEW_IMPORTS_SCRIPT_URL);
+      url.searchParams.set('action', 'getImports');
+      url.searchParams.set('t', Date.now().toString());
       
-      const response = await fetch(urlWithParams, {
+      const response = await fetch(url.toString(), {
         method: 'GET',
         cache: 'no-store'
       });
@@ -526,7 +558,10 @@ export const sheetService = {
       return actualData.filter((item: any) => item.accountNumber || item.clientName || item.businessName);
     } catch (error) {
       console.error('Error fetching imports:', error);
-      return [];
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(message === 'Failed to fetch' 
+        ? 'Connection Blocked. Please check if the Google Script is deployed to "Anyone".' 
+        : message);
     }
   },
 
@@ -542,7 +577,10 @@ export const sheetService = {
       return result.status === 'success' ? result.data : [];
     } catch (error) {
       console.error('Error fetching overdue payments:', error);
-      return [];
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(message === 'Failed to fetch' 
+        ? 'Connection Blocked. Please check if the Google Script is deployed to "Anyone".' 
+        : message);
     }
   },
 

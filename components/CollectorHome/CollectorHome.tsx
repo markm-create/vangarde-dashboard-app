@@ -189,9 +189,9 @@ const CollectorHome: React.FC<CollectorHomeProps> = ({ currentUser, onNavigate }
               
               <div className="relative z-10 text-white flex items-center justify-between h-full">
                 <div>
-                  <div className="text-indigo-100 font-black text-sm uppercase tracking-widest mb-1 opacity-80">Hi, {currentUser.name.split(' ')[0]}!</div>
-                  <h1 className="text-4xl font-black mb-2 tracking-tight">Fuel your progress!</h1>
-                  <p className="text-indigo-50 font-bold text-lg opacity-90">See your latest stats at a glance</p>
+                  <h1 className="text-4xl font-black mb-2 tracking-tight">Hello, {currentUser.name.split(' ')[0]}!</h1>
+                  <p className="text-indigo-50 font-bold text-lg opacity-90">Fuel your progress!</p>
+                  <p className="text-indigo-100 font-bold text-sm opacity-80">See your latest stats at a glance</p>
                 </div>
 
                 {/* Streak Chart (Inside Banner) */}
