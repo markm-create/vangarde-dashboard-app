@@ -205,8 +205,24 @@ const IndividualCollectorDashboard: React.FC<{ collector: Collector; onViewAudit
 
   const postdatesData = useMemo(() => {
     if (dbData?.postdates) {
-      const { succeeded, declined, recovered, remaining, succeededTrans, declinedTrans, recoveredTrans, remainingTrans } = dbData.postdates;
+      const { succeeded, declined, recovered, remaining, succeededTrans, declinedTrans, recoveredTrans, remainingTrans, totalPayments, averagePayment } = dbData.postdates;
+      
+      // Use database values if available, otherwise fallback to calculation
+      const finalTotalPayments = totalPayments !== undefined ? totalPayments : 
+        (parseInt(succeededTrans) || 0) + (parseInt(declinedTrans) || 0) + (parseInt(recoveredTrans) || 0) + (parseInt(remainingTrans) || 0);
+      
+      let finalAveragePayment = averagePayment;
+      if (finalAveragePayment === undefined) {
+        const totalValue = (parseFloat(String(succeeded).replace(/[$,]/g, '')) || 0) + 
+                           (parseFloat(String(declined).replace(/[$,]/g, '')) || 0) + 
+                           (parseFloat(String(recovered).replace(/[$,]/g, '')) || 0) + 
+                           (parseFloat(String(remaining).replace(/[$,]/g, '')) || 0);
+        finalAveragePayment = finalTotalPayments > 0 ? totalValue / finalTotalPayments : 0;
+      }
+
       return [
+        { label: "Total Number of Payments", value: finalTotalPayments.toLocaleString(), count: "", color: "#818cf8", icon: Activity, isMetric: true },
+        { label: "Total Average Payment", value: formatCurrency(finalAveragePayment), count: "", color: "#818cf8", icon: Activity, isMetric: true },
         { label: "Total Succeeded", value: formatCurrency(succeeded), count: succeededTrans || "0", color: "#34d399", icon: CheckCircle2 },
         { label: "Total Declined", value: formatCurrency(declined), count: declinedTrans || "0", color: "#f43f5e", icon: XCircle }, 
         { label: "Total Recovered", value: formatCurrency(recovered), count: recoveredTrans || "0", color: "#60A5FA", icon: RotateCcw },
@@ -214,6 +230,8 @@ const IndividualCollectorDashboard: React.FC<{ collector: Collector; onViewAudit
       ];
     }
     return [
+      { label: "Total Number of Payments", value: "180", count: "", color: "#818cf8", icon: Activity, isMetric: true },
+      { label: "Total Average Payment", value: "$525.00", count: "", color: "#818cf8", icon: Activity, isMetric: true },
       { label: "Total Succeeded", value: "$12,450.00", count: "42", color: "#34d399", icon: CheckCircle2 },
       { label: "Total Declined", value: "$3,200.00", count: "8", color: "#f43f5e", icon: XCircle }, 
       { label: "Total Recovered", value: "$1,850.00", count: "5", color: "#60A5FA", icon: RotateCcw },
@@ -531,19 +549,21 @@ const IndividualCollectorDashboard: React.FC<{ collector: Collector; onViewAudit
               </tbody>
            </table>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-           {postdatesData.map((item, i) => (<div key={i} className="bg-card px-6 py-5 rounded-2xl border border-border-subtle shadow-sm group relative overflow-hidden flex flex-col justify-center transition-all hover:shadow-md">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
+           {postdatesData.map((item, i) => (<div key={i} className={`bg-card px-4 py-4 rounded-2xl border border-border-subtle shadow-sm group relative overflow-hidden flex flex-col justify-center transition-all hover:shadow-md ${item.isMetric ? 'col-span-1 sm:col-span-1' : ''}`}>
                <div className="relative z-10">
-                 <div className="flex justify-between items-start mb-2">
-                   <p className="text-[9px] font-black text-text-muted uppercase tracking-[0.15em]">{item.label}</p>
-                   <div className="bg-surface-100 px-2.5 py-1.5 rounded-lg flex items-center gap-1 border border-border-subtle shadow-inner">
-                     <span className="text-[11px] font-black text-text-main leading-none">{item.count}</span>
-                     <span className="text-[8px] font-black text-text-muted uppercase tracking-tighter leading-none">Trans</span>
-                   </div>
+                 <div className="flex justify-between items-start mb-1">
+                   <p className="text-[8px] font-black text-text-muted uppercase tracking-[0.15em]">{item.label}</p>
+                   {!item.isMetric && (
+                     <div className="bg-surface-100 px-2 py-1 rounded-lg flex items-center gap-1 border border-border-subtle shadow-inner">
+                       <span className="text-[10px] font-black text-text-main leading-none">{item.count}</span>
+                       <span className="text-[7px] font-black text-text-muted uppercase tracking-tighter leading-none">Trans</span>
+                     </div>
+                   )}
                  </div>
-                 <h3 className="text-3xl font-black font-inter text-text-main tracking-tight" style={{ color: item.color }}>{item.value}</h3>
+                 <h3 className="text-2xl font-black font-inter text-text-main tracking-tight" style={{ color: item.color }}>{item.value}</h3>
                </div>
-               <div className="absolute -bottom-4 -right-4 z-0 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500" style={{ color: item.color }}><item.icon size={100} strokeWidth={1.5} /></div>
+               <div className="absolute -bottom-4 -right-4 z-0 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500" style={{ color: item.color }}><item.icon size={80} strokeWidth={1.5} /></div>
            </div>))}
         </div>
       </div>
