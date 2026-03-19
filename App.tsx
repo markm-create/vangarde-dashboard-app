@@ -311,6 +311,8 @@ export default function App() {
       setSelectedCollector(null);
       setActiveTab(tab);
       setIsCollectorListVisible(false);
+    } else if (tab === 'individual' || tab === 'individual-audits' || tab === 'collector-breakdown') {
+      setActiveTab(tab);
     } else {
       setSelectedCollector(null);
       setActiveTab(tab);
