@@ -65,22 +65,24 @@ const Sidebar: React.FC<SidebarProps> = ({
   const allowedCollectors = React.useMemo(() => {
     if (!collectors.data || collectors.data.length === 0) return [];
 
+    let filtered = [];
+
     // Admin/Manager/CEO see all collectors from the sheet
     if (role === 'Administrator' || role === 'Manager' || role === 'CEO' || role === 'Developer') {
-      return collectors.data;
-    }
-
-    // Collectors only see themselves (match by name)
-    if (role === 'Collector') {
-      return collectors.data.filter(c => 
+      filtered = collectors.data;
+    } else if (role === 'Collector') {
+      // Collectors only see themselves (match by name)
+      filtered = collectors.data.filter(c => 
         c.name.toLowerCase().trim() === currentUser.name.toLowerCase().trim()
+      );
+    } else {
+      // Default: use permissions if available, otherwise empty
+      filtered = collectors.data.filter(c => 
+        permissions && (permissions.allowedCollectorIds || []).includes(c.id)
       );
     }
 
-    // Default: use permissions if available, otherwise empty
-    return collectors.data.filter(c => 
-      permissions && (permissions.allowedCollectorIds || []).includes(c.id)
-    );
+    return [...filtered].sort((a, b) => a.name.localeCompare(b.name));
   }, [collectors.data, role, currentUser.name, permissions]);
 
   React.useEffect(() => {
