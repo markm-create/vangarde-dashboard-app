@@ -762,7 +762,7 @@ const UserSettings: React.FC<UserSettingsProps> = ({ isDarkMode, onToggleDarkMod
                             </div>
                             
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                {(collectors.data || []).map(collector => {
+                                {[...(collectors.data || [])].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })).map(collector => {
                                     const isAllowed = (effectivePermissions.allowedCollectorIds || []).includes(collector.id);
                                     return (
                                         <button 

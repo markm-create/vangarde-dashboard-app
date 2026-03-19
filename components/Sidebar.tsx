@@ -82,7 +82,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       );
     }
 
-    return [...filtered].sort((a, b) => a.name.localeCompare(b.name));
+    return [...filtered].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
   }, [collectors.data, role, currentUser.name, permissions]);
 
   React.useEffect(() => {
