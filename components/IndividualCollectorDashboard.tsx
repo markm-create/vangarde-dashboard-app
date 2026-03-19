@@ -409,8 +409,8 @@ const IndividualCollectorDashboard: React.FC<{ collector: Collector; onViewAudit
   }
 
   return (
-    <div className="p-8 space-y-6 animate-in fade-in duration-500 bg-app min-h-screen font-sans overflow-y-auto scrollbar-thin">
-      <div className="flex justify-between items-end mb-2">
+    <div className="p-4 md:p-6 lg:p-8 space-y-4 lg:space-y-6 animate-in fade-in duration-500 bg-app min-h-screen font-sans overflow-y-auto scrollbar-thin max-w-[1440px] mx-auto">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-2">
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-extrabold text-text-main tracking-tight uppercase">{collector.name}</h1>
@@ -474,7 +474,7 @@ const IndividualCollectorDashboard: React.FC<{ collector: Collector; onViewAudit
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
         {kpiData.map((m, i) => {
           const s = 64; const c = 32; const r = 28; const w = 5; const circ = 2 * Math.PI * r; const off = circ - (circ * m.pct) / 100;
           return (
@@ -515,8 +515,8 @@ const IndividualCollectorDashboard: React.FC<{ collector: Collector; onViewAudit
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-card rounded-2xl border border-border-subtle shadow-sm p-6 flex flex-col">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 lg:gap-6">
+        <div className="bg-card rounded-2xl border border-border-subtle shadow-sm p-4 lg:p-6 flex flex-col">
            <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-xl"><Activity size={18} /></div>
               <h4 className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em]">Performance Analytics</h4>
@@ -568,8 +568,8 @@ const IndividualCollectorDashboard: React.FC<{ collector: Collector; onViewAudit
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-8">
-          <div className="bg-card p-8 rounded-[2rem] border border-border-subtle shadow-sm">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 lg:gap-6 pb-8">
+          <div className="bg-card p-4 lg:p-8 rounded-[2rem] border border-border-subtle shadow-sm">
             <div className="flex justify-between items-center mb-8"><p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em]">Weekly Collection Cycle</p><div className="flex gap-4 text-[9px] font-black uppercase tracking-[0.15em] text-text-muted"><span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: PALETTE.PURPLE }} /> Current</span><span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: PALETTE.ORANGE }} /> Prior</span></div></div>
             <div className="h-72 w-full flex">
               <div className="flex flex-col justify-between text-[10px] font-bold text-text-muted/40 mr-4 pb-10 text-right w-8">
@@ -609,7 +609,7 @@ const IndividualCollectorDashboard: React.FC<{ collector: Collector; onViewAudit
             </div>
           </div>
           
-          <div className="bg-card p-8 rounded-[2rem] border border-border-subtle shadow-sm">
+          <div className="bg-card p-4 lg:p-8 rounded-[2rem] border border-border-subtle shadow-sm">
             <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] mb-8">Monthly Collection Cycle</p>
             <div className="flex h-72 w-full">
               <div className="flex flex-col justify-between text-[10px] font-bold text-text-muted/40 mr-4 pb-10 text-right w-8">
