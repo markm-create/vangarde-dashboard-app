@@ -102,7 +102,7 @@ const MirrorDashboard: React.FC<MirrorDashboardProps> = ({ currentUser }) => {
         // 4:00 PM
         slots['4:00 PM'].push({
           name,
-          currentAssigned: cleanNum(agent['4:00 PM']?.assigned || baseAssigned),
+          currentAssigned: baseAssigned,
           accountsWorked: cleanNum(agent['4:00 PM']?.worked),
           outboundCalls: cleanNum(agent['4:00 PM']?.outbound),
           inboundCalls: cleanNum(agent['4:00 PM']?.inbound),
