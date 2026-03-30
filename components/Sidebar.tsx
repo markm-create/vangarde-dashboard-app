@@ -151,6 +151,17 @@ const Sidebar: React.FC<SidebarProps> = ({
             />
           )}
           
+          {/* 2.5 KPI */}
+          {permissions.viewKPI && (
+            <NavItem 
+              icon={BarChart2} 
+              label="KPI" 
+              isActive={activeTab === 'kpi'} 
+              isCollapsed={isCollapsed}
+              onClick={() => onResetToMainTab('kpi')} 
+            />
+          )}
+          
           {/* 3. Postdates */}
           {permissions.viewPostdates && (
             <NavItem 

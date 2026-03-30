@@ -7,11 +7,12 @@ export interface Collector {
   [key: string]: any;
 }
 
-export type TabType = 'home' | 'executive' | 'postdates' | 'projection' | 'mirror' | 'rpc-logs' | 'collector-overview' | 'individual' | 'audits' | 'individual-audits' | 'inventory' | 'campaign' | 'settings' | 'collections-history' | 'new-imports' | 'new-assigned' | 'call-performance' | 'reports' | 'overdue-payments' | 'collector-breakdown' | 'metric-breakdown' | 'collector-inventory';
+export type TabType = 'home' | 'executive' | 'kpi' | 'postdates' | 'projection' | 'mirror' | 'rpc-logs' | 'collector-overview' | 'individual' | 'audits' | 'individual-audits' | 'inventory' | 'campaign' | 'settings' | 'collections-history' | 'new-imports' | 'new-assigned' | 'call-performance' | 'reports' | 'overdue-payments' | 'collector-breakdown' | 'metric-breakdown' | 'collector-inventory';
 
 export interface AppPermissions {
   // Page Views
   viewExecutive: boolean;
+  viewKPI: boolean;
   viewPostdates: boolean;
   viewProjection: boolean;
   viewMirror: boolean;

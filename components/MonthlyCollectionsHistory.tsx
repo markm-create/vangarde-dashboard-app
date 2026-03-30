@@ -9,7 +9,10 @@ import {
   CalendarDays,
   ChevronRight,
   Zap,
-  Loader2
+  Loader2,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { useData } from '../DataContext';
 
@@ -24,6 +27,12 @@ const MonthlyCollectionsHistory: React.FC<MonthlyCollectionsHistoryProps> = ({ o
   const { home, fetchHome } = useData();
   const [filterText, setFilterText] = useState('');
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  
+  type SortField = 'date' | 'accountNumber' | 'name' | 'clientName' | 'amount';
+  type SortDirection = 'asc' | 'desc';
+
+  const [sortField, setSortField] = useState<SortField>('date');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   
   const today = new Date();
   const initialStart = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -106,8 +115,28 @@ const MonthlyCollectionsHistory: React.FC<MonthlyCollectionsHistoryProps> = ({ o
       );
     }
     
-    return result.sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime());
-  }, [home.data, dateRange, filterText, currentUser]);
+    return result.sort((a, b) => {
+      let comparison = 0;
+      switch (sortField) {
+        case 'date':
+          comparison = a.rawDate.getTime() - b.rawDate.getTime();
+          break;
+        case 'accountNumber':
+          comparison = a.accountNumber.localeCompare(b.accountNumber);
+          break;
+        case 'name':
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case 'clientName':
+          comparison = a.clientName.localeCompare(b.clientName);
+          break;
+        case 'amount':
+          comparison = a.amount - b.amount;
+          break;
+      }
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+  }, [home.data, dateRange, filterText, currentUser, sortField, sortDirection]);
 
   const totalCollectedInRange = useMemo(() => collectorSummaries.reduce((sum, curr) => sum + curr.amount, 0), [collectorSummaries]);
 
@@ -139,6 +168,20 @@ const MonthlyCollectionsHistory: React.FC<MonthlyCollectionsHistoryProps> = ({ o
   const parseLocalDate = (dateStr: string) => {
     const [y, m, d] = dateStr.split('-').map(Number);
     return new Date(y, m - 1, d);
+  };
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) return <ArrowUpDown size={12} className="ml-1 opacity-20 inline-block" />;
+    return sortDirection === 'asc' ? <ArrowUp size={12} className="ml-1 inline-block" /> : <ArrowDown size={12} className="ml-1 inline-block" />;
   };
 
   return (
@@ -202,11 +245,11 @@ const MonthlyCollectionsHistory: React.FC<MonthlyCollectionsHistoryProps> = ({ o
                 <table className="w-full text-left border-collapse min-w-[1000px]">
                    <thead className="sticky top-0 z-20 bg-card">
                      <tr className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] border-b border-border-subtle">
-                       <th className="px-8 py-6">Date</th>
-                       <th className="px-8 py-6">Account Number</th>
-                       <th className="px-8 py-6">Collector</th>
-                       <th className="px-8 py-6">Client Name</th>
-                       <th className="px-10 py-6 text-right">Amount</th>
+                       <th className="px-8 py-6 cursor-pointer hover:text-text-main transition-colors" onClick={() => handleSort('date')}>Date <SortIcon field="date" /></th>
+                       <th className="px-8 py-6 cursor-pointer hover:text-text-main transition-colors" onClick={() => handleSort('accountNumber')}>Account Number <SortIcon field="accountNumber" /></th>
+                       <th className="px-8 py-6 cursor-pointer hover:text-text-main transition-colors" onClick={() => handleSort('name')}>Collector <SortIcon field="name" /></th>
+                       <th className="px-8 py-6 cursor-pointer hover:text-text-main transition-colors" onClick={() => handleSort('clientName')}>Client Name <SortIcon field="clientName" /></th>
+                       <th className="px-10 py-6 text-right cursor-pointer hover:text-text-main transition-colors" onClick={() => handleSort('amount')}>Amount <SortIcon field="amount" /></th>
                      </tr>
                    </thead>
                    <tbody className="divide-y divide-border-subtle text-[13px]">

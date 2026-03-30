@@ -4,6 +4,7 @@ import { Collector, TabType, AppUser } from './types';
 import Sidebar from './components/Sidebar';
 import HomeDashboard from './components/HomeDashboard';
 import ExecutiveOverview from './components/ExecutiveOverview';
+import KPIDashboard from './components/KPIDashboard';
 import PostdatesView from './components/PostdatesView';
 import CollectorPerformance from './components/CollectorPerformance';
 import IndividualCollectorDashboard from './components/IndividualCollectorDashboard';
@@ -336,6 +337,8 @@ export default function App() {
         return <HomeDashboard onNavigate={resetToMainTab} currentUser={currentUser} />;
       case 'executive':
         return <ExecutiveOverview />;
+      case 'kpi':
+        return <KPIDashboard />;
       case 'postdates':
         return <PostdatesView canManageDocuments={currentUser.permissions.manageDocuments} currentUser={currentUser} />;
       case 'projection':

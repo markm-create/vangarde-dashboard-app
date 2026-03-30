@@ -87,6 +87,7 @@ export const COLLECTORS: Collector[] = [
 
 export const DEFAULT_PERMISSIONS: AppPermissions = {
   viewExecutive: false,
+  viewKPI: false,
   viewPostdates: false,
   viewProjection: false,
   viewMirror: false,
@@ -125,6 +126,7 @@ export const getDefaultPermissionsForRole = (role: AppUser['role'], email: strin
   if (role === 'Developer' || email.toLowerCase() === 'mark.mojica@vangardegroup.com') {
     return {
       viewExecutive: true,
+      viewKPI: true,
       viewPostdates: true,
       viewProjection: true,
       viewMirror: true,
@@ -155,6 +157,7 @@ export const getDefaultPermissionsForRole = (role: AppUser['role'], email: strin
   if (role === 'Administrator' || role === 'Manager' || role === 'CEO') {
     return {
       viewExecutive: true,
+      viewKPI: true,
       viewPostdates: true,
       viewProjection: true,
       viewMirror: true,

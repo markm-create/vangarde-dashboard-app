@@ -701,6 +701,7 @@ const UserSettings: React.FC<UserSettingsProps> = ({ isDarkMode, onToggleDarkMod
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 <ToggleItem label="Executive" desc="Revenue Targets" active={effectivePermissions.viewExecutive} onToggle={() => handlePermissionToggle('viewExecutive')} />
+                                <ToggleItem label="KPI" desc="Key Performance Indicators" active={effectivePermissions.viewKPI} onToggle={() => handlePermissionToggle('viewKPI')} />
                                 <ToggleItem label="Postdates" desc="Payment Tables" active={effectivePermissions.viewPostdates} onToggle={() => handlePermissionToggle('viewPostdates')} />
                                 <ToggleItem label="Projection" desc="Target Forecasting" active={effectivePermissions.viewProjection} onToggle={() => handlePermissionToggle('viewProjection')} />
                                 <ToggleItem label="Mirror" desc="Live Snapshots" active={effectivePermissions.viewMirror} onToggle={() => handlePermissionToggle('viewMirror')} />
