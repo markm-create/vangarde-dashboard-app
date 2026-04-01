@@ -81,6 +81,14 @@ const PaymentTable: React.FC<{
         if (dateFilter.end) { const [y, m, d] = dateFilter.end.split('-').map(Number); if (itemDate > new Date(y, m - 1, d)) return false; }
         return true;
       });
+    } else if (type === 'processed') {
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      data = data.filter(item => {
+        const itemDate = new Date(item.rawDate);
+        return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear;
+      });
     }
     data.sort((a, b) => {
       let aVal = sortConfig.key === 'dateTime' ? a.rawDate.getTime() : a[sortConfig.key];
@@ -321,6 +329,7 @@ const PostdatesView: React.FC<{ canManageDocuments: boolean, currentUser: AppUse
       totalSucceeded,
       totalDeclined,
       totalRecovered,
+      totalProcessed: totalAmountProcessed,
       todaySucceeded,
       todayDeclined,
       totalRemaining,
@@ -335,7 +344,8 @@ const PostdatesView: React.FC<{ canManageDocuments: boolean, currentUser: AppUse
   const MAIN_CARDS = [
     { l: "TOTAL SUCCEEDED", v: `$${stats.totalSucceeded.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, r: `${stats.successRate}%`, theme: "emerald" }, 
     { l: "TOTAL DECLINED", v: `$${stats.totalDeclined.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, r: `${stats.declineRate}%`, theme: "rose" }, 
-    { l: "TOTAL RECOVERED", v: `$${stats.totalRecovered.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, r: `${stats.recoveryRate}%`, theme: "blue" }
+    { l: "TOTAL RECOVERED", v: `$${stats.totalRecovered.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, r: `${stats.recoveryRate}%`, theme: "blue" },
+    { l: "TOTAL PROCESSED", v: `$${stats.totalProcessed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, theme: "purple" }
   ];
   
   const SECONDARY_CARDS = [
@@ -355,10 +365,10 @@ const PostdatesView: React.FC<{ canManageDocuments: boolean, currentUser: AppUse
         <p className="text-text-muted font-semibold text-[11px] tracking-widest mt-1 uppercase">Payment Processing & Scheduling</p>
       </div>
       <div className="shrink-0 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {MAIN_CARDS.map((m, i) => {
-            const bgColors: any = { emerald: "#10b981", rose: "#f43f5e", blue: "#3b82f6" };
-            const blobColors: any = { emerald: "#059669", rose: "#e11d48", blue: "#2563eb" };
+            const bgColors: any = { emerald: "#10b981", rose: "#f43f5e", blue: "#3b82f6", purple: "#a855f7" };
+            const blobColors: any = { emerald: "#059669", rose: "#e11d48", blue: "#2563eb", purple: "#9333ea" };
             const baseColor = bgColors[m.theme];
             const blobColor = blobColors[m.theme];
 
