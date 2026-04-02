@@ -72,7 +72,11 @@ const ExecutiveOverview: React.FC = () => {
   const mapY = (val: number, max: number = 100) => 95 - (val / max) * 90; 
   const mapX = (val: number) => 2 + (val / 100) * 96; 
   const getPathThroughPoints = (pts: {x: number, y: number}[], maxVal: number = 100) => {
-    if (pts.length < 2) return "";
+    if (pts.length === 0) return "";
+    if (pts.length === 1) {
+      const mapped = [mapX(pts[0].x), mapY(pts[0].y, maxVal)];
+      return `M ${mapped[0]},${mapped[1]} L ${mapped[0]},${mapped[1]}`;
+    }
     const mapped = pts.map(p => [mapX(p.x), mapY(p.y, maxVal)]);
     let d = `M ${mapped[0][0]},${mapped[0][1]}`;
     for (let i = 0; i < mapped.length - 1; i++) {
@@ -152,7 +156,7 @@ const ExecutiveOverview: React.FC = () => {
         .filter(d => d.date.startsWith(monthlyPeriod))
         .map(d => ({
           day: d.date.split('-').pop() || d.date,
-          formattedDate: safeFormat(d.date).replace(/^[A-Z][a-z]{2}/, 'Mar'),
+          formattedDate: safeFormat(d.date),
           val: parseFloat(d.amount.toString()) || 0
         }));
     }
@@ -162,7 +166,7 @@ const ExecutiveOverview: React.FC = () => {
     const days = []; while (date.getMonth() === month - 1) { if (date.getDay() !== 0 && date.getDay() !== 6) days.push(new Date(date)); date.setDate(date.getDate() + 1); }
     return days.map((d, i) => ({ 
       day: d.getDate().toString(), 
-      formattedDate: d.toLocaleDateString('en-US', { month: 'short', day: '2-digit' }).replace(/^[A-Z][a-z]{2}/, 'Mar'),
+      formattedDate: d.toLocaleDateString('en-US', { month: 'short', day: '2-digit' }),
       val: 9000 + (Math.sin((d.getDate() * (i + 1)) / 4) * 7000) 
     }));
   }, [monthlyPeriod, executive.data]);
@@ -172,7 +176,7 @@ const ExecutiveOverview: React.FC = () => {
     return Math.max(1000, ...vals) * 1.2;
   }, [monthlyData]);
 
-  const monthlyPts = monthlyData.map((d, i) => ({ x: (i / (monthlyData.length - 1)) * 100, y: (d.val / monthlyMax) * 100 }));
+  const monthlyPts = monthlyData.map((d, i) => ({ x: monthlyData.length > 1 ? (i / (monthlyData.length - 1)) * 100 : 50, y: (d.val / monthlyMax) * 100 }));
   const yearlyMonths = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
   
   const yearlyChartData = useMemo(() => {
