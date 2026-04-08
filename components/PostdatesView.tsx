@@ -14,7 +14,8 @@ import {
   ArrowDown,
   FileSearch,
   Maximize2,
-  Minimize2
+  Minimize2,
+  ClipboardList
 } from 'lucide-react';
 import { useData } from '../DataContext';
 
@@ -223,7 +224,7 @@ const PaymentTable: React.FC<{
   );
 };
 
-const PostdatesView: React.FC<{ canManageDocuments: boolean, currentUser: AppUser }> = ({ canManageDocuments, currentUser }) => {
+const PostdatesView: React.FC<{ canManageDocuments: boolean, currentUser: AppUser, onNavigate?: (tab: any, subView?: any) => void }> = ({ canManageDocuments, currentUser, onNavigate }) => {
   const { postdates, fetchPostdates, individualCollectors, fetchIndividualCollectors } = useData();
   const [maximizedTable, setMaximizedTable] = useState<'scheduled' | 'processed' | null>(null);
 
@@ -330,6 +331,7 @@ const PostdatesView: React.FC<{ canManageDocuments: boolean, currentUser: AppUse
       totalDeclined,
       totalRecovered,
       totalProcessed: totalAmountProcessed,
+      totalSucceededPlusRecovered: totalSucceeded + totalRecovered,
       todaySucceeded,
       todayDeclined,
       totalRemaining,
@@ -345,6 +347,7 @@ const PostdatesView: React.FC<{ canManageDocuments: boolean, currentUser: AppUse
     { l: "TOTAL SUCCEEDED", v: `$${stats.totalSucceeded.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, r: `${stats.successRate}%`, theme: "emerald" }, 
     { l: "TOTAL DECLINED", v: `$${stats.totalDeclined.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, r: `${stats.declineRate}%`, theme: "rose" }, 
     { l: "TOTAL RECOVERED", v: `$${stats.totalRecovered.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, r: `${stats.recoveryRate}%`, theme: "blue" },
+    { l: "SUCCEEDED + RECOVERED", v: `$${stats.totalSucceededPlusRecovered.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, theme: "teal" },
     { l: "TOTAL PROCESSED", v: `$${stats.totalProcessed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, theme: "purple" }
   ];
   
@@ -360,15 +363,26 @@ const PostdatesView: React.FC<{ canManageDocuments: boolean, currentUser: AppUse
     <div className="p-8 bg-app h-screen max-h-screen flex flex-col animate-in fade-in duration-500 font-sans overflow-hidden">
       {maximizedTable && <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[90] animate-in fade-in duration-300" onClick={() => setMaximizedTable(null)} />}
       
-      <div className="shrink-0 mb-8">
-        <h1 className="text-2xl font-bold text-text-main uppercase tracking-wide">Post-Dates Dashboard</h1>
-        <p className="text-text-muted font-semibold text-[11px] tracking-widest mt-1 uppercase">Payment Processing & Scheduling</p>
+      <div className="shrink-0 mb-8 flex justify-between items-start">
+        <div>
+          <h1 className="text-2xl font-bold text-text-main uppercase tracking-wide">Post-Dates Dashboard</h1>
+          <p className="text-text-muted font-semibold text-[11px] tracking-widest mt-1 uppercase">Payment Processing & Scheduling</p>
+        </div>
+        {onNavigate && (
+          <button 
+            onClick={() => onNavigate('audits', 'postdates')}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-sm flex items-center gap-2"
+          >
+            <ClipboardList size={16} />
+            See Recovery Report
+          </button>
+        )}
       </div>
       <div className="shrink-0 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           {MAIN_CARDS.map((m, i) => {
-            const bgColors: any = { emerald: "#10b981", rose: "#f43f5e", blue: "#3b82f6", purple: "#a855f7" };
-            const blobColors: any = { emerald: "#059669", rose: "#e11d48", blue: "#2563eb", purple: "#9333ea" };
+            const bgColors: any = { emerald: "#10b981", rose: "#f43f5e", blue: "#3b82f6", purple: "#a855f7", teal: "#14b8a6" };
+            const blobColors: any = { emerald: "#059669", rose: "#e11d48", blue: "#2563eb", purple: "#9333ea", teal: "#0d9488" };
             const baseColor = bgColors[m.theme];
             const blobColor = blobColors[m.theme];
 
@@ -385,7 +399,11 @@ const PostdatesView: React.FC<{ canManageDocuments: boolean, currentUser: AppUse
                 <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent pointer-events-none"></div>
 
                 <div className="relative z-10 flex flex-col h-full justify-between">
-                  <div className="flex justify-end items-start"><p className="text-base font-black text-white font-inter opacity-90">{m.r}</p></div>
+                  <div className="flex justify-end items-start">
+                    <p className="text-base font-black text-white font-inter opacity-90">
+                      {m.r || '\u00A0'}
+                    </p>
+                  </div>
                   <div className="mt-2"><h3 className="text-4xl font-black font-inter tracking-tight text-white drop-shadow-sm">{m.v}</h3></div>
                   <div className="flex justify-between items-end mt-auto">
                     <p className="text-xs font-bold text-white/90 uppercase tracking-wider mb-1">{m.l}</p>

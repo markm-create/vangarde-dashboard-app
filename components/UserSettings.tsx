@@ -709,6 +709,7 @@ const UserSettings: React.FC<UserSettingsProps> = ({ isDarkMode, onToggleDarkMod
                                 <ToggleItem label="Collector" desc="Team Ranks" active={effectivePermissions.viewCollectorDashboard} onToggle={() => handlePermissionToggle('viewCollectorDashboard')} />
                                 <ToggleItem label="Collector Home" desc="Collector Landing Page" active={effectivePermissions.viewCollectorHome} onToggle={() => handlePermissionToggle('viewCollectorHome')} />
                                 <ToggleItem label="Audits" desc="Compliance" active={effectivePermissions.viewAuditDashboard} onToggle={() => handlePermissionToggle('viewAuditDashboard')} />
+                                <ToggleItem label="Recovery" desc="Decline Recovery Audit" active={effectivePermissions.viewRecovery} onToggle={() => handlePermissionToggle('viewRecovery')} />
                                 <ToggleItem label="Inventory" desc="Assets" active={effectivePermissions.viewInventory} onToggle={() => handlePermissionToggle('viewInventory')} />
                                 <ToggleItem label="Collector Inventory" desc="Personal Assets" active={effectivePermissions.viewCollectorInventory} onToggle={() => handlePermissionToggle('viewCollectorInventory')} />
                                 <ToggleItem label="Campaign" desc="Outreach Hub" active={effectivePermissions.viewCampaign} onToggle={() => handlePermissionToggle('viewCampaign')} />

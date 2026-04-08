@@ -17,7 +17,8 @@ import {
   TrendingUp,
   FileText,
   AlertOctagon,
-  Megaphone
+  Megaphone,
+  ShieldAlert
 } from 'lucide-react';
 import { useData } from '../DataContext';
 import { TabType, AppUser, Collector } from '../types';
@@ -47,7 +48,16 @@ const Sidebar: React.FC<SidebarProps> = ({
   onCollectorDeleted,
   onLogout
 }) => {
-  const { collectors, fetchCollectors } = useData();
+  const { 
+    collectors, 
+    fetchCollectors,
+    onboardingAudits,
+    billingAudit,
+    flaggedAccounts,
+    fetchOnboardingAudits,
+    fetchBillingAudit,
+    fetchFlaggedAccounts
+  } = useData();
 
   React.useEffect(() => {
     fetchCollectors();
@@ -60,6 +70,60 @@ const Sidebar: React.FC<SidebarProps> = ({
   if (!currentUser) return null;
 
   const { permissions, role } = currentUser;
+
+  React.useEffect(() => {
+    if (permissions.viewAuditDashboard || role === 'Collector') {
+      fetchOnboardingAudits();
+      fetchBillingAudit();
+      fetchFlaggedAccounts();
+    }
+  }, [permissions.viewAuditDashboard, role, fetchOnboardingAudits, fetchBillingAudit, fetchFlaggedAccounts]);
+
+  const pendingAuditCount = React.useMemo(() => {
+    const isNameMatch = (name1: string, name2: string) => {
+      if (!name1 || !name2) return false;
+      const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const n1 = normalize(name1);
+      const n2 = normalize(name2);
+      if (n1 === n2) return true;
+      if (n1.includes(n2) || n2.includes(n1)) return true;
+      const getWords = (s: string) => s.toLowerCase().split(/[\s,._-]+/).filter(w => w.length > 1);
+      const w1 = getWords(name1);
+      const w2 = getWords(name2);
+      if (w1.length > 0 && w2.length > 0) {
+        const allW1InW2 = w1.every(word => w2.some(w => w.includes(word) || word.includes(w)));
+        const allW2InW1 = w2.every(word => w1.some(w => w.includes(word) || word.includes(w)));
+        if (allW1InW2 || allW2InW1) return true;
+      }
+      return false;
+    };
+
+    const isCollector = role === 'Collector';
+
+    const onboardingPending = (onboardingAudits?.data || [])
+      .filter(a => {
+        const agentMatch = isCollector ? isNameMatch(a.agentName || a.collectorName, currentUser.name) : true;
+        const result = String(a.auditResult || '').trim().toLowerCase();
+        const isAlert = result === 'failed' || result === 'pending';
+        return agentMatch && isAlert;
+      }).length;
+
+    const billingPending = (billingAudit?.data || [])
+      .filter(a => {
+        const agentMatch = isCollector ? isNameMatch(a.agentName || a.collectorName, currentUser.name) : true;
+        const ppaAction = String(a.ppaAction || '').trim();
+        const isAlert = ['Update PPA', 'Delete PPA', 'Follow-Up PPA'].includes(ppaAction);
+        return agentMatch && isAlert;
+      }).length;
+      
+    const flaggedPending = (flaggedAccounts?.data || [])
+      .filter(a => {
+        const agentMatch = isCollector ? isNameMatch(a.agentName || a.collectorName, currentUser.name) : true;
+        return agentMatch;
+      }).length;
+      
+    return onboardingPending + billingPending + flaggedPending;
+  }, [role, currentUser.name, onboardingAudits?.data, billingAudit?.data, flaggedAccounts?.data]);
 
   // Determine which collectors to show based on role and sheet data
   const allowedCollectors = React.useMemo(() => {
@@ -251,7 +315,19 @@ const Sidebar: React.FC<SidebarProps> = ({
               label="Audits" 
               isActive={activeTab === 'audits'} 
               isCollapsed={isCollapsed}
+              alertCount={pendingAuditCount}
               onClick={() => onResetToMainTab('audits')} 
+            />
+          )}
+
+          {/* 7.5 Recovery */}
+          {permissions.viewRecovery && (
+            <NavItem 
+              icon={AlertOctagon} 
+              label="Recovery" 
+              isActive={activeTab === 'recovery'} 
+              isCollapsed={isCollapsed}
+              onClick={() => onResetToMainTab('recovery')} 
             />
           )}
           
@@ -338,7 +414,8 @@ const NavItem: React.FC<{
   onClick: () => void;
   hasSubmenu?: boolean;
   isSubmenuOpen?: boolean;
-}> = ({ icon: Icon, label, isActive, isCollapsed, onClick, hasSubmenu, isSubmenuOpen }) => {
+  alertCount?: number;
+}> = ({ icon: Icon, label, isActive, isCollapsed, onClick, hasSubmenu, isSubmenuOpen, alertCount }) => {
   return (
     <button 
       onClick={onClick}
@@ -360,6 +437,11 @@ const NavItem: React.FC<{
           <span className={`text-[15px] font-medium whitespace-nowrap transition-opacity duration-200 flex-1 text-left ${isActive ? 'font-bold' : ''}`}>
             {label}
           </span>
+          {alertCount !== undefined && alertCount > 0 && (
+            <div className="bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+              {alertCount}
+            </div>
+          )}
           {hasSubmenu && (
             <ChevronDown 
               size={16} 
@@ -371,6 +453,9 @@ const NavItem: React.FC<{
       
       {isCollapsed && isActive && (
         <div className="absolute left-0 w-1 h-8 bg-white rounded-r-full"></div>
+      )}
+      {isCollapsed && alertCount !== undefined && alertCount > 0 && (
+        <div className="absolute top-1 right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-[#4f46e5]"></div>
       )}
     </button>
   );

@@ -27,7 +27,7 @@ import CollectorHome from './components/CollectorHome/CollectorHome';
 import NewAssignedAccounts from './components/NewAssignedAccounts';
 import CollectorInventory from './components/CollectorInventory';
 import Login from './Login';
-import { getDefaultPermissionsForRole, USER_SCRIPT_URL, CONFIG } from './constants';
+import { getDefaultPermissionsForRole, USER_SCRIPT_URL, CONFIG, COLLECTORS } from './constants';
 
 const parseCloudPermissions = (settings: any, role: string, email: string) => {
   if (!settings) return getDefaultPermissionsForRole(role as any, email);
@@ -340,7 +340,7 @@ export default function App() {
       case 'kpi':
         return <KPIDashboard />;
       case 'postdates':
-        return <PostdatesView canManageDocuments={currentUser.permissions.manageDocuments} currentUser={currentUser} />;
+        return <PostdatesView canManageDocuments={currentUser.permissions.manageDocuments} currentUser={currentUser} onNavigate={resetToMainTab} />;
       case 'projection':
         return <ProjectionDashboard />;
       case 'mirror':
@@ -350,12 +350,36 @@ export default function App() {
       case 'collector-overview':
         return <CollectorPerformance currentUser={currentUser} />;
       case 'audits':
+        if (currentUser.role === 'Collector') {
+          const matchedCollector = COLLECTORS.find(c => c.name.toLowerCase() === currentUser.name.toLowerCase());
+          if (matchedCollector) {
+            return (
+              <IndividualAuditLogs 
+                collector={matchedCollector} 
+                onBack={() => resetToMainTab('home')} 
+                canManageDocuments={currentUser.permissions.manageDocuments}
+                canSendReport={currentUser.permissions.sendReport}
+              />
+            );
+          }
+          return <div className="p-8 text-slate-400">Collector profile not found.</div>;
+        }
         return (
           <AuditDashboard 
             canManageDocuments={currentUser.permissions.manageDocuments} 
             initialView={auditInitialView} 
             onNavigate={resetToMainTab}
             selectedAgent={flaggedAgent}
+            currentUser={currentUser}
+          />
+        );
+      case 'recovery':
+        return (
+          <AuditDashboard 
+            canManageDocuments={currentUser.permissions.manageDocuments} 
+            initialView="postdates"
+            onNavigate={resetToMainTab}
+            currentUser={currentUser}
           />
         );
       case 'inventory':
@@ -423,20 +447,8 @@ export default function App() {
             <IndividualCollectorDashboard 
               key={selectedCollector.id}
               collector={selectedCollector} 
-              onViewAudits={() => resetToMainTab('individual-audits')} 
+              onViewAudits={() => resetToMainTab('audits')} 
               onCollectorDeleted={handleCollectorDeleted}
-            />
-          );
-        }
-        return <div className="p-8 text-slate-400">Please select a collector from the sidebar.</div>;
-      case 'individual-audits':
-        if (selectedCollector) {
-          return (
-            <IndividualAuditLogs 
-              collector={selectedCollector} 
-              onBack={() => resetToMainTab('individual')} 
-              canManageDocuments={currentUser.permissions.manageDocuments}
-              canSendReport={currentUser.permissions.sendReport}
             />
           );
         }

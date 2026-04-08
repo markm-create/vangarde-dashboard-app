@@ -21,7 +21,8 @@ import {
   ChevronUp,
   LayoutGrid,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  FileSearch
 } from 'lucide-react';
 import { TabType, AppUser } from '../types';
 import { useData } from '../DataContext';
@@ -38,7 +39,8 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
     imports, fetchImports,
     flaggedAccounts, fetchFlaggedAccounts,
     callPerformance, fetchCallPerformance,
-    overduePayments, fetchOverduePayments
+    overduePayments, fetchOverduePayments,
+    onboardingAudits, fetchOnboardingAudits
   } = useData();
   const [isCalendarExpanded, setIsCalendarExpanded] = useState(false);
   const today = new Date();
@@ -51,6 +53,7 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
     fetchFlaggedAccounts();
     fetchCallPerformance();
     fetchOverduePayments();
+    fetchOnboardingAudits();
     
     const interval = setInterval(() => {
       fetchHome(true);
@@ -59,9 +62,10 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
       fetchFlaggedAccounts(true);
       fetchCallPerformance(true);
       fetchOverduePayments(true);
+      fetchOnboardingAudits(true);
     }, 60000); // Poll every 60 seconds
     return () => clearInterval(interval);
-  }, [fetchHome, fetchPostdates, fetchImports, fetchFlaggedAccounts, fetchCallPerformance, fetchOverduePayments]);
+  }, [fetchHome, fetchPostdates, fetchImports, fetchFlaggedAccounts, fetchCallPerformance, fetchOverduePayments, fetchOnboardingAudits]);
 
   const stats = useMemo(() => {
     // Prefer data from home.data.dailyMetrics as it uses specific spreadsheet cells (M4, N4, O3)
@@ -164,8 +168,19 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
       });
     }
 
+    // 5. Onboarding Audits (Failed + Pending)
+    let newImportsAuditCount = 0;
+    if (onboardingAudits.data && onboardingAudits.data.length > 0) {
+      onboardingAudits.data.forEach((item: any) => {
+        if (item.status === 'Failed' || item.status === 'Pending') {
+          newImportsAuditCount++;
+        }
+      });
+    }
+
     return {
       imports: { count: totalImports, sub: lastImportDate },
+      newImportsAudit: { count: newImportsAuditCount, label: "Failed & Pending" },
       stagnant: { count: totalFlagged, label: "Accounts flagged" },
       callTime: { val: avgCallTimeStr },
       overdue: { 
@@ -173,7 +188,7 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
         count: overdueCount 
       }
     };
-  }, [imports.data, flaggedAccounts.data, callPerformance.data, overduePayments.data]);
+  }, [imports.data, flaggedAccounts.data, callPerformance.data, overduePayments.data, onboardingAudits.data]);
 
   const heroes = home.data?.yesterdayHeroes || [];
   const topCollectors = home.data?.topCollectors || [];
@@ -270,7 +285,7 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
                 </div>
             </div>
 
-            <div className="grid grid-cols-4 gap-8 shrink-0 p-1">
+            <div className="grid grid-cols-5 gap-8 shrink-0 p-1">
                 <OpsCard 
                     label="New Imports" 
                     val={opsMetrics.imports.count} 
@@ -278,6 +293,14 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
                     color="indigo" 
                     icon={FileDown} 
                     onClick={currentUser.role !== 'Collector' ? () => onNavigate('new-imports') : undefined} 
+                />
+                <OpsCard 
+                    label="New Imports Audit" 
+                    val={opsMetrics.newImportsAudit.count} 
+                    sub={opsMetrics.newImportsAudit.label} 
+                    color="teal" 
+                    icon={FileSearch} 
+                    onClick={currentUser.permissions.viewAuditDashboard ? () => onNavigate('audits', 'onboarding') : undefined} 
                 />
                 <OpsCard 
                     label="Flagged accounts" 
@@ -391,24 +414,24 @@ const StatCard = ({ label, val, change, isIncrease, theme, icon: Icon, subVal }:
 };
 
 const OpsCard = ({ label, val, sub, color, icon: Icon, onClick }: any) => {
-    const colorMap: any = { indigo: "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400", rose: "bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400", amber: "bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400", emerald: "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400" };
-    const btnColor: any = { indigo: "bg-indigo-600 hover:bg-indigo-700", rose: "bg-rose-600 hover:bg-rose-700", amber: "bg-amber-600 hover:bg-amber-700", emerald: "bg-emerald-600 hover:bg-emerald-700" };
-    const textColor: any = { indigo: "text-indigo-600", rose: "text-rose-600", amber: "text-amber-600", emerald: "text-emerald-600" };
+    const colorMap: any = { indigo: "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400", rose: "bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400", amber: "bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400", emerald: "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400", teal: "bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400" };
+    const btnColor: any = { indigo: "bg-indigo-600 hover:bg-indigo-700", rose: "bg-rose-600 hover:bg-rose-700", amber: "bg-amber-600 hover:bg-amber-700", emerald: "bg-emerald-600 hover:bg-emerald-700", teal: "bg-teal-600 hover:bg-teal-700" };
+    const textColor: any = { indigo: "text-indigo-600", rose: "text-rose-600", amber: "text-amber-600", emerald: "text-emerald-600", teal: "text-teal-600" };
   return (
     <div className="bg-card rounded-[1.5rem] p-6 shadow-sm border border-border-subtle flex flex-col justify-center gap-2 group hover:shadow-md transition-all cursor-default min-h-[160px]">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-xl ${colorMap[color]} group-hover:scale-110 transition-transform`}><Icon size={18} /></div>
-            <span className="text-[11px] font-black text-text-muted uppercase tracking-widest truncate">{label}</span>
+        <div className="flex items-center gap-2 overflow-hidden">
+            <div className={`p-2 rounded-xl shrink-0 ${colorMap[color]} group-hover:scale-110 transition-transform`}><Icon size={16} /></div>
+            <span className="text-[9px] font-black text-text-muted uppercase tracking-wider truncate">{label}</span>
         </div>
         {onClick && (
-            <button onClick={onClick} className={`p-1.5 rounded-lg text-white shadow-sm transition-all active:scale-90 ${btnColor[color]}`}>
-                <ArrowRight size={14} strokeWidth={3} />
+            <button onClick={onClick} className={`p-1.5 rounded-lg text-white shadow-sm shrink-0 transition-all active:scale-90 ${btnColor[color]}`}>
+                <ArrowRight size={12} strokeWidth={3} />
             </button>
         )}
       </div>
       <div className="text-3xl font-black text-text-main leading-none tracking-tight">{val}</div>
-      <div className={`text-[11px] font-black truncate leading-none mt-1 uppercase tracking-wider ${textColor[color]}`}>{sub}</div>
+      <div className={`text-[9px] font-black truncate leading-none mt-1 uppercase tracking-wider ${textColor[color]}`}>{sub}</div>
     </div>
   );
 };

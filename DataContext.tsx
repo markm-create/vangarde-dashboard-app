@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { sheetService } from './services/sheetService';
 import { ExecutiveData, HomeData, Collector, AuditScoringData } from './types';
-import { PROJECTION_SCRIPT_URL, ONBOARDING_AUDIT_SCRIPT_URL, ACCOUNT_CLOSURE_AUDIT_SCRIPT_URL, DECLINE_RECOVERY_SCRIPT_URL } from './constants';
+import { PROJECTION_SCRIPT_URL, ONBOARDING_AUDIT_SCRIPT_URL, ACCOUNT_CLOSURE_AUDIT_SCRIPT_URL, DECLINE_RECOVERY_SCRIPT_URL, KPI_SCRIPT_URL } from './constants';
 
 interface Payment { 
   accountId: string; 
@@ -162,6 +162,12 @@ interface DataContextType {
     error: string | null;
   };
   collectorInventory: {
+    data: any[];
+    isLoading: boolean;
+    lastFetched: number | null;
+    error: string | null;
+  };
+  kpi: {
     data: any[];
     isLoading: boolean;
     lastFetched: number | null;
@@ -346,6 +352,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [collectorInventory, setCollectorInventory] = useState<DataContextType['collectorInventory']>({
+    data: [],
+    isLoading: false,
+    lastFetched: null,
+    error: null,
+  });
+
+  const [kpi, setKpi] = useState<DataContextType['kpi']>({
     data: [],
     isLoading: false,
     lastFetched: null,
@@ -976,6 +989,31 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [newAssignedAccounts.lastFetched]);
 
+  const fetchKpi = useCallback(async (force = false) => {
+    if (!force && kpi.lastFetched && Date.now() - kpi.lastFetched < 300000) return;
+    
+    const scriptUrl = KPI_SCRIPT_URL;
+    if (!scriptUrl) return;
+
+    setKpi(prev => ({ ...prev, isLoading: true, error: null }));
+    try {
+      const response = await fetch(scriptUrl);
+      if (!response.ok) throw new Error('Failed to fetch KPI data');
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+      
+      setKpi({
+        data: Array.isArray(data) ? data : [],
+        isLoading: false,
+        lastFetched: Date.now(),
+        error: null
+      });
+    } catch (error) {
+      console.error('Error fetching KPI data:', error);
+      setKpi(prev => ({ ...prev, isLoading: false, error: (error as Error).message }));
+    }
+  }, [kpi.lastFetched]);
+
   const fetchCollectorInventory = useCallback(async (collectorName: string, force = false) => {
     if (!force && collectorInventory.lastFetched && Date.now() - collectorInventory.lastFetched < 300000) return;
     setCollectorInventory(prev => ({ ...prev, isLoading: true, error: null }));
@@ -1033,6 +1071,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       collectorHome,
       newAssignedAccounts,
       collectorInventory,
+      kpi,
+      fetchKpi,
       fetchPostdates, 
       fetchRPCLogs,
       fetchReminders,

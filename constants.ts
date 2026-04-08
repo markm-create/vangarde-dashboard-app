@@ -69,6 +69,8 @@ export const BILLING_AUDIT_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE
 // Audit Scoring Script URL
 export const AUDIT_SCORING_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_AUDIT_SCORING_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbzuCY3PXXVshOhB2aKrPbaTx7khR_8Zha3aPlCuAeRP_2OaQjLgvjMGl0kZwIEpjFqGIg/exec");
 
+// KPI Dashboard Script URL
+export const KPI_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_KPI_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbw2-0NgTNlwg4OISWXS4Q9A2Glmhg8tBZjAVoXkrYc28V-yBz905pobt4kndKH18fImbw/exec");
 
 export const COLLECTORS: Collector[] = [
   { id: 'c8', name: 'Arianne Sanchez', status: 'online', rank: 10 },
@@ -101,6 +103,7 @@ export const DEFAULT_PERMISSIONS: AppPermissions = {
   viewSettings: false,
   viewOverduePayments: false,
   viewBillingAudit: false,
+  viewRecovery: false,
   manageRPCLogs: false,
   manageClients: false,
   manageUsers: false,
@@ -140,6 +143,7 @@ export const getDefaultPermissionsForRole = (role: AppUser['role'], email: strin
       viewSettings: true,
       viewOverduePayments: true,
       viewBillingAudit: true,
+      viewRecovery: true,
       manageRPCLogs: true,
       manageClients: true,
       manageUsers: true,
@@ -171,6 +175,7 @@ export const getDefaultPermissionsForRole = (role: AppUser['role'], email: strin
       viewSettings: true,
       viewOverduePayments: true,
       viewBillingAudit: true,
+      viewRecovery: false,
       manageRPCLogs: true,
       manageClients: true,
       manageUsers: false, 
@@ -194,6 +199,7 @@ export const getDefaultPermissionsForRole = (role: AppUser['role'], email: strin
       viewCollectorDashboard: true,
       viewCollectorHome: true,
       viewCollectorInventory: true,
+      viewRecovery: true,
       viewSettings: true,
       manageRPCLogs: true,
       allowedCollectorIds: [] // Usually restricted to self, but defaults empty for now

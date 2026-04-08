@@ -11,7 +11,6 @@ import {
   PhoneOutgoing, 
   CheckCheck,
   ShieldAlert,
-  Bell,
   Users,
   Loader2,
   AlertCircle,
@@ -135,32 +134,6 @@ const IndividualCollectorDashboard: React.FC<{ collector: Collector; onViewAudit
     if (isNaN(num)) return "$0.00";
     return `$${num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
-
-  const pendingAuditCount = useMemo(() => {
-    const onboardingPending = (onboardingAudits.data || [])
-      .filter(a => {
-        const agentMatch = isNameMatch(a.agentName || a.collectorName, collector.name);
-        const result = String(a.auditResult || '').trim().toLowerCase();
-        const isAlert = result === 'failed' || result === 'pending';
-        return agentMatch && isAlert;
-      }).length;
-
-    const billingPending = (billingAudit.data || [])
-      .filter(a => {
-        const agentMatch = isNameMatch(a.agentName || a.collectorName, collector.name);
-        const ppaAction = String(a.ppaAction || '').trim();
-        const isAlert = ['Update PPA', 'Delete PPA', 'Follow-Up PPA'].includes(ppaAction);
-        return agentMatch && isAlert;
-      }).length;
-      
-    const flaggedPending = (flaggedAccounts.data || [])
-      .filter(a => {
-        const agentMatch = isNameMatch(a.agentName || a.collectorName, collector.name);
-        return agentMatch;
-      }).length;
-      
-    return onboardingPending + billingPending + flaggedPending;
-  }, [collector.name, onboardingAudits.data, billingAudit.data, flaggedAccounts.data]);
 
   const assignedAccounts = useMemo(() => {
     if (dbData?.accounts?.assigned !== undefined) {
@@ -438,31 +411,6 @@ const IndividualCollectorDashboard: React.FC<{ collector: Collector; onViewAudit
         </div>
         
         <div className="flex items-center gap-3">
-          <button 
-            onClick={onViewAudits} 
-            className={`relative flex items-center gap-3 px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] shadow-xl transition-all duration-300 group
-              ${pendingAuditCount > 0 
-                ? 'bg-rose-600 text-white animate-pulse ring-4 ring-rose-500/20 shadow-rose-500/30 overflow-hidden' 
-                : 'bg-card border border-border-subtle text-text-muted hover:border-border-subtle hover:text-text-main'
-              }
-            `}
-          >
-            {pendingAuditCount > 0 ? (
-              <>
-                <div className="absolute top-0 left-0 w-full h-1 bg-white/20 animate-[shimmer_2s_infinite]"></div>
-                <Bell size={16} className="animate-bounce" />
-                <span>{pendingAuditCount} Audit Alerts</span>
-                <div className="bg-white/20 px-2 py-0.5 rounded-lg ml-2 group-hover:bg-white/30 transition-colors uppercase">
-                  Action Required
-                </div>
-              </>
-            ) : (
-              <>
-                <ShieldAlert size={16} />
-                <span>Audit Logs</span>
-              </>
-            )}
-          </button>
           <button 
             onClick={() => fetchIndividualCollectors(true)}
             disabled={individualCollectors.isLoading}

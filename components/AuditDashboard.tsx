@@ -87,8 +87,9 @@ const AuditDashboard: React.FC<{
   canManageDocuments: boolean, 
   initialView?: AuditViewType,
   onNavigate?: (tab: any, subView?: any, agent?: string) => void,
-  selectedAgent?: string | null
-}> = ({ canManageDocuments, initialView, onNavigate, selectedAgent: propSelectedAgent }) => {
+  selectedAgent?: string | null,
+  currentUser?: any
+}> = ({ canManageDocuments, initialView, onNavigate, selectedAgent: propSelectedAgent, currentUser }) => {
   const [activeView, setActiveView] = useState<AuditViewType>(initialView || 'overview');
   const { 
     flaggedAccounts, 
@@ -127,8 +128,72 @@ const AuditDashboard: React.FC<{
   }, [activeView, fetchFlaggedAccounts, fetchOnboardingAudits, fetchDeclineRecovery, fetchAccountClosureAudit]);
 
   const onboardingData = useMemo(() => onboardingAudits.data, [onboardingAudits.data]);
-  const postdatesData = useMemo(() => declineRecovery.data?.records || [], [declineRecovery.data]);
-  const postdatesSummary = useMemo(() => declineRecovery.data?.summary || null, [declineRecovery.data]);
+  const postdatesData = useMemo(() => {
+    const records = declineRecovery.data?.records || [];
+    if (currentUser?.role === 'Collector') {
+      return records.filter((r: any) => r.collectorName?.toLowerCase().trim() === currentUser.name?.toLowerCase().trim());
+    }
+    return records;
+  }, [declineRecovery.data, currentUser]);
+  const postdatesSummary = useMemo(() => {
+    if (!postdatesData || postdatesData.length === 0) {
+      return {
+        declinedPostdates: { amount: 0, count: 0 },
+        recovered: { amount: 0, count: 0 },
+        unrecoverable: { amount: 0, count: 0 },
+        remaining: { amount: 0, count: 0 },
+        rescheduled: { amount: 0, count: 0 },
+        ongoing: { amount: 0, count: 0 },
+        needFollowUp: { amount: 0, count: 0 },
+        brokenPromise: { amount: 0, count: 0 }
+      };
+    }
+
+    const summary = {
+      declinedPostdates: { amount: 0, count: 0 },
+      recovered: { amount: 0, count: 0 },
+      unrecoverable: { amount: 0, count: 0 },
+      remaining: { amount: 0, count: 0 },
+      rescheduled: { amount: 0, count: 0 },
+      ongoing: { amount: 0, count: 0 },
+      needFollowUp: { amount: 0, count: 0 },
+      brokenPromise: { amount: 0, count: 0 }
+    };
+
+    postdatesData.forEach((r: any) => {
+      summary.declinedPostdates.count++;
+      summary.declinedPostdates.amount += r.amount || 0;
+
+      const status = (r.status || "").toLowerCase();
+      
+      if (status === "recovered") {
+        summary.recovered.count++;
+        summary.recovered.amount += r.amount || 0;
+      } else if (status === "unrecoverable" || status === "cancelled ppa") {
+        summary.unrecoverable.count++;
+        summary.unrecoverable.amount += r.amount || 0;
+      } else {
+        summary.remaining.count++;
+        summary.remaining.amount += r.amount || 0;
+        
+        if (status === "rescheduled") {
+          summary.rescheduled.count++;
+          summary.rescheduled.amount += r.amount || 0;
+        } else if (status === "ongoing recovery" || status === "ongoing") {
+          summary.ongoing.count++;
+          summary.ongoing.amount += r.amount || 0;
+        } else if (status === "need follow-up" || status === "no follow-up") {
+          summary.needFollowUp.count++;
+          summary.needFollowUp.amount += r.amount || 0;
+        } else if (status === "broken promise") {
+          summary.brokenPromise.count++;
+          summary.brokenPromise.amount += r.amount || 0;
+        }
+      }
+    });
+
+    return summary;
+  }, [postdatesData]);
   const billingData = useMemo(() => generateBillingAudits(200), []);
   const aeeRtpData = useMemo(() => accountClosureAudit.data, [accountClosureAudit.data]);
   const accountMonitoringData = useMemo(() => generateAccountMonitoringAudits(100), []);
