@@ -755,14 +755,14 @@ const StagnantAccountReport = ({
 const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack, canExport, isLoading, onRefresh }: any) => {
   const [filterText, setFilterText] = useState('');
   const [sortConfig, setSortConfig] = useState<{key: string, direction: 'asc' | 'desc'}>(() => {
-    if (viewType === 'onboarding') return { key: 'dateAudit', direction: 'desc' };
+    if (viewType === 'onboarding') return { key: 'auditResult', direction: 'asc' };
     if (viewType === 'postdates') return { key: 'transactionDate', direction: 'desc' };
     if (viewType === 'rpc') return { key: 'callDate', direction: 'desc' };
     return { key: 'dateAudited', direction: 'desc' };
   });
 
   useEffect(() => {
-    if (viewType === 'onboarding') setSortConfig({ key: 'dateAudit', direction: 'desc' });
+    if (viewType === 'onboarding') setSortConfig({ key: 'auditResult', direction: 'asc' });
     else if (viewType === 'postdates') setSortConfig({ key: 'transactionDate', direction: 'desc' });
     else if (viewType === 'rpc') setSortConfig({ key: 'callDate', direction: 'desc' });
     else setSortConfig({ key: 'dateAudited', direction: 'desc' });
@@ -830,6 +830,17 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
     data.sort((a, b) => { 
       let aV = a[sortConfig.key]; 
       let bV = b[sortConfig.key];
+
+      if (sortConfig.key === 'auditResult') {
+        const order: Record<string, number> = { 'failed': 1, 'pending': 2, 'passed': 3 };
+        const aOrder = order[String(aV || '').trim().toLowerCase()] || 4;
+        const bOrder = order[String(bV || '').trim().toLowerCase()] || 4;
+        
+        if (aOrder < bOrder) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aOrder > bOrder) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      }
+
       if (String(sortConfig.key).toLowerCase().includes('date')) {
           if (typeof aV === 'string') aV = aV.replace(/\s+[l|]\s+/g, ' ');
           if (typeof bV === 'string') bV = bV.replace(/\s+[l|]\s+/g, ' ');

@@ -58,7 +58,7 @@ export const INVENTORY_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_INV
 export const COLLECTOR_INVENTORY_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_COLLECTOR_INVENTORY_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbxshC2U2vFFdboUA4Xovibz7qjBlBHCM66W3JN3i-8cWKe_sJcAl5Z4-LqXYD3KDYEh/exec");
 
 // Onboarding Account Audit Report Script URL
-export const ONBOARDING_AUDIT_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_ONBOARDING_AUDIT_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbzifIxZFboKWxdXaIcabFQ_7WkccWAij9F2LwccNWyQrkqFw_Cs688uf_RisvXVNFwbCw/exec");
+export const ONBOARDING_AUDIT_SCRIPT_URL: string = "https://script.google.com/macros/s/AKfycbzifIxZFboKWxdXaIcabFQ_7WkccWAij9F2LwccNWyQrkqFw_Cs688uf_RisvXVNFwbCw/exec";
 
 // Account Closure Audit Script URL
 export const ACCOUNT_CLOSURE_AUDIT_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_ACCOUNT_CLOSURE_AUDIT_URL, "https://script.google.com/macros/s/AKfycbzle7UUrdcDp5vw1_XUQuYjNQM2GYS_vGhHI2R47KhT-IO9Qy9_BSRrJp7a8Odd4bVLlw/exec");

@@ -798,7 +798,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setOnboardingAudits(prev => ({ ...prev, isLoading: true, error: null }));
     try {
-      const SCRIPT_URL = import.meta.env.VITE_ONBOARDING_AUDIT_SCRIPT_URL || ONBOARDING_AUDIT_SCRIPT_URL;
+      const SCRIPT_URL = ONBOARDING_AUDIT_SCRIPT_URL;
       
       const response = await fetch(SCRIPT_URL);
       if (!response.ok) {
@@ -818,7 +818,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const rawData = result.data || [];
       const filteredData = rawData.filter((item: any) => {
         const accNum = String(item.accountNumber || '').toLowerCase();
-        const agent = String(item.agentName || '').toLowerCase();
+        const agent = String(item.agentName || item.collectorName || '').toLowerCase();
         // Skip if it looks like a header row
         if (accNum.includes('account') && accNum.includes('number')) return false;
         if (agent.includes('collector') || agent.includes('agent')) return false;

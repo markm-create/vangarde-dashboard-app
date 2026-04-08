@@ -99,27 +99,25 @@ const KPIDashboard: React.FC = () => {
 
   // Mock data generator for collectors
   const getMockData = (collectorName: string) => {
-    const hash = collectorName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    
     return {
       collectorName,
       collection: {
-        daily: { collected: hash * 2.5, target: hash * 3, variance: (hash * 2.5) / (hash * 3) * 100 },
-        weekly: { collected: hash * 15, target: hash * 18, variance: (hash * 15) / (hash * 18) * 100 },
-        monthly: { collected: hash * 60, target: hash * 70, variance: (hash * 60) / (hash * 70) * 100 },
-        payments: { count: Math.round(hash / 10), average: hash / 5 }
+        daily: { collected: 0, target: 0, variance: 0 },
+        weekly: { collected: 0, target: 0, variance: 0 },
+        monthly: { collected: 0, target: 0, variance: 0 },
+        payments: { count: 0, average: 0 }
       },
       performance: {
-        overview: { assigned: Math.round(hash * 1.5), inactivated: Math.round(hash / 20) },
-        daily: { worked: Math.round(hash / 15), outbound: Math.round(hash / 10), inbound: Math.round(hash / 50), missed: Math.round(hash / 100), duration: hash * 10 },
-        weekly: { worked: Math.round(hash / 3), outbound: Math.round(hash / 2), inbound: Math.round(hash / 10), missed: Math.round(hash / 20), duration: hash * 50 },
-        monthly: { worked: Math.round(hash * 1.2), outbound: Math.round(hash * 2), inbound: Math.round(hash / 2.5), missed: Math.round(hash / 5), duration: hash * 200 }
+        overview: { assigned: 0, inactivated: 0 },
+        daily: { worked: 0, outbound: 0, inbound: 0, missed: 0, duration: 0 },
+        weekly: { worked: 0, outbound: 0, inbound: 0, missed: 0, duration: 0 },
+        monthly: { worked: 0, outbound: 0, inbound: 0, missed: 0, duration: 0 }
       },
       postdates: {
-        daily: { succeeded: hash * 5, declined: hash * 1, processed: hash * 6 },
-        weekly: { succeeded: hash * 25, declined: hash * 5, recovered: hash * 2, processed: hash * 30 },
-        monthly: { succeeded: hash * 100, declined: hash * 20, recovered: hash * 10, processed: hash * 120 },
-        remaining: { monthly: hash * 12.5, nextWeek: hash * 4.2 }
+        daily: { succeeded: 0, declined: 0, processed: 0 },
+        weekly: { succeeded: 0, declined: 0, recovered: 0, processed: 0 },
+        monthly: { succeeded: 0, declined: 0, recovered: 0, processed: 0 },
+        remaining: { monthly: 0, nextWeek: 0 }
       }
     };
   };
@@ -129,7 +127,7 @@ const KPIDashboard: React.FC = () => {
   }, [fetchKpi]);
 
   const sortedData = useMemo(() => {
-    const sourceData = kpi.data.length > 0 ? kpi.data : COLLECTORS.map(c => getMockData(c.name));
+    const sourceData = (kpi.data.length > 0 && !kpi.isLoading) ? kpi.data : COLLECTORS.map(c => getMockData(c.name));
     
     if (!sortConfig) return sourceData;
 
@@ -157,11 +155,11 @@ const KPIDashboard: React.FC = () => {
       if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [kpi.data, sortConfig]);
+  }, [kpi.data, kpi.isLoading, sortConfig]);
 
   const collectionSummary = useMemo(() => {
     let daily = 0, weekly = 0, monthly = 0, payments = 0, totalAverage = 0;
-    const data = kpi.data.length > 0 ? kpi.data : COLLECTORS.map(c => getMockData(c.name));
+    const data = (kpi.data.length > 0 && !kpi.isLoading) ? kpi.data : COLLECTORS.map(c => getMockData(c.name));
     data.forEach((d: any) => {
       const dCol = typeof d.collection.daily.collected === 'string' ? parseFloat(d.collection.daily.collected.replace(/[^0-9.-]+/g, "")) : d.collection.daily.collected;
       const wCol = typeof d.collection.weekly.collected === 'string' ? parseFloat(d.collection.weekly.collected.replace(/[^0-9.-]+/g, "")) : d.collection.weekly.collected;
@@ -175,11 +173,11 @@ const KPIDashboard: React.FC = () => {
     });
     totalAverage = payments > 0 ? monthly / payments : 0;
     return { daily, weekly, monthly, payments, totalAverage };
-  }, [kpi.data]);
+  }, [kpi.data, kpi.isLoading]);
 
   const performanceSummary = useMemo(() => {
     let worked = 0, outbound = 0, inbound = 0, missed = 0, duration = 0;
-    const data = kpi.data.length > 0 ? kpi.data : COLLECTORS.map(c => getMockData(c.name));
+    const data = (kpi.data.length > 0 && !kpi.isLoading) ? kpi.data : COLLECTORS.map(c => getMockData(c.name));
     data.forEach((d: any) => {
       const pData = d.performance.monthly;
       const w = typeof pData.worked === 'string' ? parseFloat(pData.worked.replace(/[^0-9.-]+/g, "")) : pData.worked;
@@ -203,11 +201,11 @@ const KPIDashboard: React.FC = () => {
       duration += dur;
     });
     return { worked, outbound, inbound, missed, duration };
-  }, [kpi.data]);
+  }, [kpi.data, kpi.isLoading]);
 
   const postdatesSummary = useMemo(() => {
     let succeeded = 0, declined = 0, recovered = 0, processed = 0, remainingMonthly = 0, nextWeek = 0;
-    const data = kpi.data.length > 0 ? kpi.data : COLLECTORS.map(c => getMockData(c.name));
+    const data = (kpi.data.length > 0 && !kpi.isLoading) ? kpi.data : COLLECTORS.map(c => getMockData(c.name));
     data.forEach((d: any) => {
       const pData = d.postdates.monthly;
       const rData = d.postdates.remaining;
@@ -226,7 +224,7 @@ const KPIDashboard: React.FC = () => {
       if (!isNaN(nw)) nextWeek += nw;
     });
     return { succeeded, declined, recovered, processed, remainingMonthly, nextWeek };
-  }, [kpi.data]);
+  }, [kpi.data, kpi.isLoading]);
 
   const SummaryCard = ({ label, value, icon: Icon, colorClass }: any) => (
     <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-4">
@@ -241,22 +239,23 @@ const KPIDashboard: React.FC = () => {
   );
 
   const collectionChartData = useMemo(() => {
-    const sourceData = kpi.data.length > 0 ? kpi.data : COLLECTORS.map(c => getMockData(c.name));
+    const sourceData = (kpi.data.length > 0 && !kpi.isLoading) ? kpi.data : COLLECTORS.map(c => getMockData(c.name));
     return sourceData.map((d: any) => {
       const periodData = d.collection[collectionTimeframe];
       const collected = typeof periodData.collected === 'string' ? parseFloat(periodData.collected.replace(/[^0-9.-]+/g, "")) : periodData.collected;
       const target = typeof periodData.target === 'string' ? parseFloat(periodData.target.replace(/[^0-9.-]+/g, "")) : periodData.target;
       
       return {
-        name: d.collectorName.split(' ')[0], // Use first name for brevity
+        name: d.collectorName.split(' ')[0], // Use first name for brevity on axis
+        fullName: d.collectorName,
         collected: isNaN(collected) ? 0 : collected,
         target: isNaN(target) ? 0 : target,
       };
     });
-  }, [kpi.data, collectionTimeframe]);
+  }, [kpi.data, kpi.isLoading, collectionTimeframe]);
 
   const performanceChartData = useMemo(() => {
-    const sourceData = kpi.data.length > 0 ? kpi.data : COLLECTORS.map(c => getMockData(c.name));
+    const sourceData = (kpi.data.length > 0 && !kpi.isLoading) ? kpi.data : COLLECTORS.map(c => getMockData(c.name));
     return sourceData.map((d: any) => {
       const periodData = d.performance[performanceTimeframe];
       const worked = typeof periodData.worked === 'string' ? parseFloat(periodData.worked.replace(/[^0-9.-]+/g, "")) : periodData.worked;
@@ -275,6 +274,7 @@ const KPIDashboard: React.FC = () => {
       
       return {
         name: d.collectorName.split(' ')[0],
+        fullName: d.collectorName,
         worked: isNaN(worked) ? 0 : worked,
         outbound: isNaN(outbound) ? 0 : outbound,
         inbound: isNaN(inbound) ? 0 : inbound,
@@ -282,7 +282,7 @@ const KPIDashboard: React.FC = () => {
         duration: durationNum,
       };
     });
-  }, [kpi.data, performanceTimeframe]);
+  }, [kpi.data, kpi.isLoading, performanceTimeframe]);
 
   const TimeframeToggle = ({ value, onChange }: { value: string, onChange: (v: any) => void }) => (
     <div className="flex bg-slate-100 dark:bg-slate-700/50 p-1 rounded-lg">
@@ -681,6 +681,8 @@ const KPIDashboard: React.FC = () => {
                       />
                       <Tooltip 
                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)' }}
+                        labelStyle={{ color: '#1e293b', fontWeight: 'bold', marginBottom: '8px' }}
+                        labelFormatter={(label, payload) => payload?.[0]?.payload?.fullName || label}
                         formatter={(value: number, name: string) => [formatCurrency(value), name]}
                       />
                       <Legend wrapperStyle={{ paddingTop: '20px' }} />
@@ -729,6 +731,8 @@ const KPIDashboard: React.FC = () => {
                       />
                       <Tooltip 
                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)' }}
+                        labelStyle={{ color: '#1e293b', fontWeight: 'bold', marginBottom: '8px' }}
+                        labelFormatter={(label, payload) => payload?.[0]?.payload?.fullName || label}
                         formatter={(value: number, name: string) => name === 'Call Duration (mins)' ? [`${value.toFixed(1)} mins`, name] : [value, name]}
                       />
                       <Legend wrapperStyle={{ paddingTop: '20px' }} />

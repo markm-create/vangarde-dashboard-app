@@ -172,7 +172,8 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
     let newImportsAuditCount = 0;
     if (onboardingAudits.data && onboardingAudits.data.length > 0) {
       onboardingAudits.data.forEach((item: any) => {
-        if (item.status === 'Failed' || item.status === 'Pending') {
+        const status = String(item.auditResult || '').trim().toLowerCase();
+        if (status === 'failed' || status === 'pending') {
           newImportsAuditCount++;
         }
       });
