@@ -34,6 +34,11 @@ const InitialCampaignView: React.FC<InitialCampaignViewProps> = ({ onBack }) => 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  const currentDate = new Date();
+  const currentMonth = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+  const [monthFilter, setMonthFilter] = useState(currentMonth);
+  const [statusFilter, setStatusFilter] = useState('All');
 
   const fetchData = async (force = false) => {
     setLoading(true);
@@ -80,14 +85,35 @@ const InitialCampaignView: React.FC<InitialCampaignViewProps> = ({ onBack }) => 
     fetchData();
   }, []);
 
+  const dateFilteredData = useMemo(() => {
+    if (!monthFilter) return data;
+    
+    return data.filter(d => {
+      if (!d.dateSent) return false;
+      const parts = d.dateSent.split('/');
+      if (parts.length === 3) {
+        const [month, day, year] = parts;
+        const formattedDate = `${year}-${month.padStart(2, '0')}`;
+        return formattedDate === monthFilter;
+      }
+      try {
+        const date = new Date(d.dateSent);
+        const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        return formattedDate === monthFilter;
+      } catch (e) {
+        return false;
+      }
+    });
+  }, [data, monthFilter]);
+
   const stats = useMemo(() => {
-    const total = data.length;
+    const total = dateFilteredData.length;
     if (total === 0) return { total: 0, sent: 0, replied: 0, bounced: 0, invalid: 0, sentCount: 0, repliedCount: 0, bouncedCount: 0, invalidCount: 0 };
 
-    const sent = data.filter(d => d.campaignStatus?.toLowerCase().includes('sent')).length;
-    const replied = data.filter(d => d.campaignStatus?.toLowerCase().includes('replied')).length;
-    const bounced = data.filter(d => d.campaignStatus?.toLowerCase().includes('bounced')).length;
-    const invalid = data.filter(d => d.campaignStatus?.toLowerCase().includes('invalid')).length;
+    const sent = dateFilteredData.filter(d => d.campaignStatus?.toLowerCase().includes('sent')).length;
+    const replied = dateFilteredData.filter(d => d.campaignStatus?.toLowerCase().includes('replied')).length;
+    const bounced = dateFilteredData.filter(d => d.campaignStatus?.toLowerCase().includes('bounced')).length;
+    const invalid = dateFilteredData.filter(d => d.campaignStatus?.toLowerCase().includes('invalid')).length;
 
     return {
       total,
@@ -100,15 +126,19 @@ const InitialCampaignView: React.FC<InitialCampaignViewProps> = ({ onBack }) => 
       bouncedCount: bounced,
       invalidCount: invalid
     };
-  }, [data]);
+  }, [dateFilteredData]);
 
   const filteredData = useMemo(() => {
-    return data.filter(d => 
-      d.businessName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      d.accountNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      d.debtorEmail?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [data, searchTerm]);
+    return dateFilteredData.filter(d => {
+      const matchesSearch = d.businessName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            d.accountNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            d.debtorEmail?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesStatus = statusFilter === 'All' || d.campaignStatus?.toLowerCase().includes(statusFilter.toLowerCase());
+      
+      return matchesSearch && matchesStatus;
+    });
+  }, [dateFilteredData, searchTerm, statusFilter]);
 
   const handleExport = () => {
     const headers = ['Date Sent', 'Account Number', 'Business Name', 'Creditor Name', 'Account Status', 'Debtor Email', 'Campaign Status', 'Debtor Response'];
@@ -220,8 +250,27 @@ const InitialCampaignView: React.FC<InitialCampaignViewProps> = ({ onBack }) => 
               className="w-full pl-12 pr-4 py-2.5 bg-app border border-border-subtle rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium"
             />
           </div>
-          <div className="text-[10px] font-black text-text-muted uppercase tracking-widest">
-            Showing {filteredData.length} of {data.length} Records
+          <div className="flex items-center gap-4">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-4 py-2.5 bg-app border border-border-subtle rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium text-text-main"
+            >
+              <option value="All">All Statuses</option>
+              <option value="Sent">Sent</option>
+              <option value="Replied">Replied</option>
+              <option value="Bounced">Bounced</option>
+              <option value="Invalid">Invalid</option>
+            </select>
+            <input
+              type="month"
+              value={monthFilter}
+              onChange={(e) => setMonthFilter(e.target.value)}
+              className="px-4 py-2.5 bg-app border border-border-subtle rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium text-text-main"
+            />
+            <div className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-2">
+              Showing {filteredData.length} of {dateFilteredData.length} Records
+            </div>
           </div>
         </div>
 
