@@ -146,30 +146,6 @@ const CampaignDashboard: React.FC<CampaignDashboardProps> = ({ onBack }) => {
         </div>
       </div>
 
-      <div className="mt-auto bg-indigo-600 rounded-3xl p-8 text-white relative overflow-hidden shadow-2xl shadow-indigo-500/20">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl" />
-        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center">
-              <Send size={24} />
-            </div>
-            <div>
-              <h4 className="text-lg font-black uppercase tracking-tight">Campaign Analytics</h4>
-              <p className="text-indigo-100 text-xs font-medium">Real-time tracking for all outreach efforts</p>
-            </div>
-          </div>
-          <div className="flex gap-4">
-            <div className="text-center px-6 py-2 bg-white/10 rounded-xl backdrop-blur-sm">
-              <p className="text-[10px] font-bold uppercase tracking-widest opacity-70">Sent Today</p>
-              <p className="text-xl font-black">1,284</p>
-            </div>
-            <div className="text-center px-6 py-2 bg-white/10 rounded-xl backdrop-blur-sm">
-              <p className="text-[10px] font-bold uppercase tracking-widest opacity-70">Open Rate</p>
-              <p className="text-xl font-black">64%</p>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
