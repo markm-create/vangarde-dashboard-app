@@ -84,10 +84,10 @@ const InitialCampaignView: React.FC<InitialCampaignViewProps> = ({ onBack }) => 
     const total = data.length;
     if (total === 0) return { total: 0, sent: 0, replied: 0, bounced: 0, invalid: 0, sentCount: 0, repliedCount: 0, bouncedCount: 0, invalidCount: 0 };
 
-    const sent = data.filter(d => d.campaignStatus?.trim().toLowerCase() === 'sent').length;
-    const replied = data.filter(d => d.campaignStatus?.trim().toLowerCase() === 'replied').length;
-    const bounced = data.filter(d => d.campaignStatus?.trim().toLowerCase() === 'bounced').length;
-    const invalid = data.filter(d => d.campaignStatus?.trim().toLowerCase() === 'invalid').length;
+    const sent = data.filter(d => d.campaignStatus?.toLowerCase().includes('sent')).length;
+    const replied = data.filter(d => d.campaignStatus?.toLowerCase().includes('replied')).length;
+    const bounced = data.filter(d => d.campaignStatus?.toLowerCase().includes('bounced')).length;
+    const invalid = data.filter(d => d.campaignStatus?.toLowerCase().includes('invalid')).length;
 
     return {
       total,
@@ -196,14 +196,14 @@ const InitialCampaignView: React.FC<InitialCampaignViewProps> = ({ onBack }) => 
           value={`${stats.bounced.toFixed(1)}%`} 
           subValue={`${stats.bouncedCount} Failed`}
           icon={XCircle} 
-          color="rose" 
+          color="orange" 
         />
         <StatBox 
           label="Invalid" 
           value={`${stats.invalid.toFixed(1)}%`} 
           subValue={`${stats.invalidCount} Bad Data`}
           icon={AlertCircle} 
-          color="amber" 
+          color="rose" 
         />
       </div>
 
@@ -292,10 +292,10 @@ const InitialCampaignView: React.FC<InitialCampaignViewProps> = ({ onBack }) => 
                       <td className="px-6 py-4 text-xs font-medium text-text-muted">{row.debtorEmail}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          {row.campaignStatus?.trim().toLowerCase() === 'sent' ? <Send size={14} className="text-blue-500" /> :
-                           row.campaignStatus?.trim().toLowerCase() === 'replied' ? <MessageSquare size={14} className="text-emerald-500" /> :
-                           row.campaignStatus?.trim().toLowerCase() === 'bounced' ? <XCircle size={14} className="text-rose-500" /> :
-                           row.campaignStatus?.trim().toLowerCase() === 'invalid' ? <AlertCircle size={14} className="text-amber-500" /> :
+                          {row.campaignStatus?.toLowerCase().includes('sent') ? <Send size={14} className="text-blue-500" /> :
+                           row.campaignStatus?.toLowerCase().includes('replied') ? <MessageSquare size={14} className="text-emerald-500" /> :
+                           row.campaignStatus?.toLowerCase().includes('bounced') ? <XCircle size={14} className="text-orange-500" /> :
+                           row.campaignStatus?.toLowerCase().includes('invalid') ? <AlertCircle size={14} className="text-rose-500" /> :
                            <AlertCircle size={14} className="text-text-muted" />}
                           <span className="text-xs font-bold text-text-main">{row.campaignStatus}</span>
                         </div>
@@ -323,7 +323,8 @@ const StatBox = ({ label, value, subValue, icon: Icon, color }: any) => {
     blue: 'bg-blue-50 text-blue-600 border-blue-100',
     emerald: 'bg-emerald-50 text-emerald-600 border-emerald-100',
     rose: 'bg-rose-50 text-rose-600 border-rose-100',
-    amber: 'bg-amber-50 text-amber-600 border-amber-100'
+    amber: 'bg-amber-50 text-amber-600 border-amber-100',
+    orange: 'bg-orange-50 text-orange-600 border-orange-100'
   };
 
   return (
