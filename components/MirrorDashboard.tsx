@@ -15,9 +15,10 @@ import {
 import { useData } from '../DataContext';
 
 import { AppUser } from '../types';
+import { CONFIG } from '../constants';
 
 type ViewMode = 'grid' | 'list';
-type TimeSlot = '10:00 AM' | '12:00 PM' | '4:00 PM';
+type TimeSlot = '10:00 AM' | '12:00 PM' | '2:00 PM' | '4:00 PM' | '6:00 PM';
 type SortKey = 'name' | 'currentAssigned' | 'accountsWorked' | 'outboundCalls' | 'inboundCalls' | 'completedCalls' | 'collected' | 'missedCalls';
 
 interface AgentMirrorStats { 
@@ -38,9 +39,26 @@ interface MirrorDashboardProps {
 
 const MirrorDashboard: React.FC<MirrorDashboardProps> = ({ currentUser }) => {
   const { mirror, fetchMirror, collectors, fetchCollectors } = useData();
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const saved = localStorage.getItem(CONFIG.MIRROR_VIEW_KEY);
+    return (saved as ViewMode) || 'grid';
+  });
   const [timeSlot, setTimeSlot] = useState<TimeSlot>('12:00 PM');
   const [sortKey, setSortKey] = useState<SortKey>('name');
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const saved = localStorage.getItem(CONFIG.MIRROR_VIEW_KEY);
+      if (saved) setViewMode(saved as ViewMode);
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  const handleViewModeChange = (mode: ViewMode) => {
+    setViewMode(mode);
+    localStorage.setItem(CONFIG.MIRROR_VIEW_KEY, mode);
+  };
 
   useEffect(() => {
     fetchMirror();
@@ -57,7 +75,9 @@ const MirrorDashboard: React.FC<MirrorDashboardProps> = ({ currentUser }) => {
       const slots: Record<TimeSlot, AgentMirrorStats[]> = {
         '10:00 AM': [],
         '12:00 PM': [],
-        '4:00 PM': []
+        '2:00 PM': [],
+        '4:00 PM': [],
+        '6:00 PM': []
       };
 
       mirror.data.forEach(agent => {
@@ -71,45 +91,24 @@ const MirrorDashboard: React.FC<MirrorDashboardProps> = ({ currentUser }) => {
         };
 
         const name = agent.name || 'Unknown Agent';
-        const baseAssigned = cleanNum(agent.baseAssigned);
 
-        // 10:00 AM
-        slots['10:00 AM'].push({
-          name,
-          currentAssigned: baseAssigned,
-          accountsWorked: cleanNum(agent['10:00 AM']?.worked),
-          outboundCalls: cleanNum(agent['10:00 AM']?.outbound),
-          inboundCalls: cleanNum(agent['10:00 AM']?.inbound),
-          completedCalls: cleanNum(agent['10:00 AM']?.outbound) + cleanNum(agent['10:00 AM']?.inbound),
-          missedCalls: cleanNum(agent['10:00 AM']?.missed),
-          callDuration: String(agent['10:00 AM']?.duration || "0:00:00"),
-          collected: cleanNum(agent['10:00 AM']?.collected)
-        });
-
-        // 12:00 PM
-        slots['12:00 PM'].push({
-          name,
-          currentAssigned: baseAssigned,
-          accountsWorked: cleanNum(agent['12:00 PM']?.worked),
-          outboundCalls: cleanNum(agent['12:00 PM']?.outbound),
-          inboundCalls: cleanNum(agent['12:00 PM']?.inbound),
-          completedCalls: cleanNum(agent['12:00 PM']?.outbound) + cleanNum(agent['12:00 PM']?.inbound),
-          missedCalls: cleanNum(agent['12:00 PM']?.missed),
-          callDuration: String(agent['12:00 PM']?.duration || "0:00:00"),
-          collected: cleanNum(agent['12:00 PM']?.collected)
-        });
-
-        // 4:00 PM
-        slots['4:00 PM'].push({
-          name,
-          currentAssigned: baseAssigned,
-          accountsWorked: cleanNum(agent['4:00 PM']?.worked),
-          outboundCalls: cleanNum(agent['4:00 PM']?.outbound),
-          inboundCalls: cleanNum(agent['4:00 PM']?.inbound),
-          completedCalls: cleanNum(agent['4:00 PM']?.outbound) + cleanNum(agent['4:00 PM']?.inbound),
-          missedCalls: cleanNum(agent['4:00 PM']?.missed),
-          callDuration: String(agent['4:00 PM']?.duration || "0:00:00"),
-          collected: cleanNum(agent['4:00 PM']?.collected)
+        const timeSlots: TimeSlot[] = ['10:00 AM', '12:00 PM', '2:00 PM', '4:00 PM', '6:00 PM'];
+        
+        timeSlots.forEach(slot => {
+          const slotData = agent[slot] || {};
+          const assigned = cleanNum(slotData.assigned);
+          
+          slots[slot].push({
+            name,
+            currentAssigned: assigned,
+            accountsWorked: cleanNum(slotData.worked),
+            outboundCalls: cleanNum(slotData.outbound),
+            inboundCalls: cleanNum(slotData.inbound),
+            completedCalls: cleanNum(slotData.outbound) + cleanNum(slotData.inbound),
+            missedCalls: cleanNum(slotData.missed),
+            callDuration: String(slotData.duration || "0:00:00"),
+            collected: cleanNum(slotData.collected)
+          });
         });
       });
 
@@ -117,7 +116,14 @@ const MirrorDashboard: React.FC<MirrorDashboardProps> = ({ currentUser }) => {
     }
 
     const generateStats = (slot: TimeSlot): AgentMirrorStats[] => {
-      const mult = slot === '10:00 AM' ? 0.3 : slot === '12:00 PM' ? 0.6 : 1.0;
+      const mults: Record<TimeSlot, number> = {
+        '10:00 AM': 0.2,
+        '12:00 PM': 0.4,
+        '2:00 PM': 0.6,
+        '4:00 PM': 0.8,
+        '6:00 PM': 1.0
+      };
+      const mult = mults[slot];
       const activeCollectors = collectors.data || [];
       return activeCollectors.map((collector, i) => {
         const seed = i + 1; 
@@ -139,12 +145,24 @@ const MirrorDashboard: React.FC<MirrorDashboardProps> = ({ currentUser }) => {
         };
       });
     };
-    return { '10:00 AM': generateStats('10:00 AM'), '12:00 PM': generateStats('12:00 PM'), '4:00 PM': generateStats('4:00 PM') };
+    return { 
+      '10:00 AM': generateStats('10:00 AM'), 
+      '12:00 PM': generateStats('12:00 PM'), 
+      '2:00 PM': generateStats('2:00 PM'), 
+      '4:00 PM': generateStats('4:00 PM'), 
+      '6:00 PM': generateStats('6:00 PM') 
+    };
   }, [mirror.data, collectors.data]);
 
   const currentStats = useMemo(() => {
     let stats = [...mirrorData[timeSlot]];
     
+    // Filter out Unassigned and House File
+    stats = stats.filter(agent => {
+      const name = agent.name.toLowerCase();
+      return name !== 'unassigned' && name !== 'house file';
+    });
+
     // Filter for collector role
     if (currentUser.role.toLowerCase() === 'collector') {
       stats = stats.filter(agent => agent.name.toLowerCase() === currentUser.name.toLowerCase());
@@ -206,13 +224,13 @@ const MirrorDashboard: React.FC<MirrorDashboardProps> = ({ currentUser }) => {
             </select>
           </div>
           <div className="bg-card p-1 rounded-xl shadow-sm border border-border-subtle flex items-center h-11">
-            {(['10:00 AM', '12:00 PM', '4:00 PM'] as TimeSlot[]).map((slot) => (
+            {(['10:00 AM', '12:00 PM', '2:00 PM', '4:00 PM', '6:00 PM'] as TimeSlot[]).map((slot) => (
               <button key={slot} onClick={() => setTimeSlot(slot)} className={`px-4 h-full rounded-lg text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-2 ${timeSlot === slot ? 'bg-indigo-600 text-white shadow-md' : 'text-text-muted hover:text-indigo-600'}`}>{slot}</button>
             ))}
           </div>
           <div className="bg-card p-1 rounded-xl shadow-sm border border-border-subtle flex items-center h-11">
-            <button onClick={() => setViewMode('grid')} className={`p-2 h-full rounded-lg transition-all flex items-center px-3 ${viewMode === 'grid' ? 'bg-surface-100 text-indigo-600 shadow-inner' : 'text-text-muted hover:text-text-main'}`}><LayoutGrid size={20} /></button>
-            <button onClick={() => setViewMode('list')} className={`p-2 h-full rounded-lg transition-all flex items-center px-3 ${viewMode === 'list' ? 'bg-surface-100 text-indigo-600 shadow-inner' : 'text-text-muted hover:text-text-main'}`}><List size={20} /></button>
+            <button onClick={() => handleViewModeChange('grid')} className={`p-2 h-full rounded-lg transition-all flex items-center px-3 ${viewMode === 'grid' ? 'bg-surface-100 text-indigo-600 shadow-inner' : 'text-text-muted hover:text-text-main'}`}><LayoutGrid size={20} /></button>
+            <button onClick={() => handleViewModeChange('list')} className={`p-2 h-full rounded-lg transition-all flex items-center px-3 ${viewMode === 'list' ? 'bg-surface-100 text-indigo-600 shadow-inner' : 'text-text-muted hover:text-text-main'}`}><List size={20} /></button>
           </div>
         </div>
       </div>

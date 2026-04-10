@@ -382,7 +382,7 @@ const IndividualCollectorDashboard: React.FC<{ collector: Collector; onViewAudit
   }
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 space-y-4 lg:space-y-6 animate-in fade-in duration-500 bg-app min-h-screen font-sans overflow-y-auto scrollbar-thin max-w-[1440px] mx-auto">
+    <div className="p-4 md:p-6 space-y-4 lg:space-y-6 animate-in fade-in duration-500 bg-app min-h-screen font-sans overflow-y-auto scrollbar-thin">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-2">
         <div>
           <div className="flex items-center gap-3">

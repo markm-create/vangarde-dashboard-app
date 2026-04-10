@@ -471,6 +471,51 @@ const UserSettings: React.FC<UserSettingsProps> = ({ isDarkMode, onToggleDarkMod
                       </div>
                    </button>
                 </div>
+
+                <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                   <div className="flex items-center gap-4">
+                      <div className="p-3 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400">
+                         <Layout size={24} />
+                      </div>
+                      <div>
+                         <h4 className="font-bold text-slate-800 dark:text-slate-100">Mirror Page Default View</h4>
+                         <p className="text-xs text-slate-500 dark:text-slate-400">Choose your preferred layout for the Mirror Page</p>
+                      </div>
+                   </div>
+
+                   <div className="flex bg-white dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
+                      <button 
+                        onClick={() => {
+                          localStorage.setItem(CONFIG.MIRROR_VIEW_KEY, 'grid');
+                          window.dispatchEvent(new Event('storage'));
+                          setShowSuccess(true);
+                          setTimeout(() => setShowSuccess(false), 2000);
+                        }}
+                        className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                          localStorage.getItem(CONFIG.MIRROR_VIEW_KEY) !== 'list'
+                          ? 'bg-indigo-600 text-white shadow-md' 
+                          : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+                        }`}
+                      >
+                        Grid
+                      </button>
+                      <button 
+                        onClick={() => {
+                          localStorage.setItem(CONFIG.MIRROR_VIEW_KEY, 'list');
+                          window.dispatchEvent(new Event('storage'));
+                          setShowSuccess(true);
+                          setTimeout(() => setShowSuccess(false), 2000);
+                        }}
+                        className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                          localStorage.getItem(CONFIG.MIRROR_VIEW_KEY) === 'list'
+                          ? 'bg-indigo-600 text-white shadow-md' 
+                          : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+                        }`}
+                      >
+                        Table
+                      </button>
+                   </div>
+                </div>
               </div>
             )}
 

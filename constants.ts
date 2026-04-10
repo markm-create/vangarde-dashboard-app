@@ -72,6 +72,9 @@ export const AUDIT_SCORING_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE
 // KPI Dashboard Script URL
 export const KPI_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_KPI_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbw2-0NgTNlwg4OISWXS4Q9A2Glmhg8tBZjAVoXkrYc28V-yBz905pobt4kndKH18fImbw/exec");
 
+// Initial Campaign Script URL
+export const INITIAL_CAMPAIGN_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_INITIAL_CAMPAIGN_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbwGbv81YQxe56VnPpsFt29YgRkop4r21EZUwr6Fu0whi6BHpaylp2xV7453WvTAs0mT/exec");
+
 export const COLLECTORS: Collector[] = [
   { id: 'c8', name: 'Arianne Sanchez', status: 'online', rank: 10 },
   { id: 'c9', name: 'Charles Phillips', status: 'offline', rank: 11 },
@@ -118,6 +121,7 @@ export const DEFAULT_PERMISSIONS: AppPermissions = {
 export const CONFIG = {
   STORAGE_KEY: "vg_app_users",
   THEME_KEY: "vg_theme_preference",
+  MIRROR_VIEW_KEY: "vg_mirror_view_preference",
   SESSION_KEY: "vg_active_session"
 };
 

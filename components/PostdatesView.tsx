@@ -21,7 +21,7 @@ import { useData } from '../DataContext';
 
 import { AppUser } from '../types';
 
-interface Payment { accountId: string; owner: string; dateTime: string; amount: number; status: 'Scheduled' | 'Succeeded' | 'Declined' | 'Failed'; rawDate: Date; }
+interface Payment { accountId: string; owner: string; dateTime: string; amount: number; status: 'Scheduled' | 'Succeeded' | 'Declined' | 'Failed' | 'Recovered' | 'Rescheduled' | 'Unrecoverable'; rawDate: Date; }
 const OWNERS = ["Arianne Sanchez", "Sophia Smith", "Penelope Williams", "Mary Smith", "Kim Park", "Karen Justice", "Elizabeth Harris", "Chris Reed", "Chase Schaffer", "Charles Phillips"];
 
 const generatePayments = (count: number, type: 'scheduled' | 'processed'): Payment[] => {
@@ -31,7 +31,12 @@ const generatePayments = (count: number, type: 'scheduled' | 'processed'): Payme
     const now = new Date(); const date = new Date(now);
     let status: Payment['status'];
     if (type === 'scheduled') { date.setDate(now.getDate() + 1 + (i % 14)); date.setHours(9 + (i % 8), 0, 0, 0); status = 'Scheduled'; } 
-    else { date.setDate(now.getDate() - (i % 7)); date.setHours(9 + (i % 8), 30, 0, 0); status = i % 5 === 0 ? 'Failed' : 'Succeeded'; }
+    else { 
+      date.setDate(now.getDate() - (i % 7)); 
+      date.setHours(9 + (i % 8), 30, 0, 0); 
+      const statuses: Payment['status'][] = ['Succeeded', 'Failed', 'Recovered', 'Rescheduled', 'Unrecoverable'];
+      status = statuses[i % statuses.length];
+    }
     return { accountId: `2026-${1000 + i}`, owner, dateTime: date.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }), amount, status, rawDate: date };
   });
 };
@@ -167,7 +172,7 @@ const PaymentTable: React.FC<{
                  <div className="absolute right-0 top-full mt-2 w-48 bg-card rounded-xl shadow-2xl border border-border-subtle p-4 z-50 animate-in fade-in zoom-in-95">
                    <div className="flex justify-between items-center mb-4"><h4 className="text-xs font-bold text-text-main uppercase tracking-wider">Status Filter</h4><button onClick={() => setIsFilterOpen(false)} className="text-text-muted"><X size={14} /></button></div>
                    <div className="space-y-1">
-                     {['All', 'Succeeded', 'Failed'].map((status) => (
+                     {['All', 'Succeeded', 'Failed', 'Recovered', 'Rescheduled', 'Unrecoverable'].map((status) => (
                        <button
                          key={status}
                          onClick={() => {
@@ -214,7 +219,19 @@ const PaymentTable: React.FC<{
                   <td className="px-6 py-4 text-text-main font-normal">{row.owner}</td>
                   <td className="px-6 py-4 text-text-muted font-inter font-normal">{row.dateTime}</td>
                   <td className="px-6 py-4 text-right text-text-main font-inter font-normal">${row.amount.toFixed(2)}</td>
-                  {type === 'processed' && (<td className="px-6 py-4 text-right"><span className={`px-2 py-0.5 rounded text-[9px] font-bold tracking-wide uppercase ${row.status === 'Succeeded' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500' : 'bg-rose-50 dark:bg-rose-900/30 text-rose-500'}`}>{row.status}</span></td>)}
+                  {type === 'processed' && (
+                    <td className="px-6 py-4 text-right">
+                      <span className={`px-2 py-0.5 rounded text-[9px] font-bold tracking-wide uppercase ${
+                        row.status === 'Succeeded' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500' : 
+                        row.status === 'Recovered' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-500' :
+                        row.status === 'Rescheduled' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-500' :
+                        row.status === 'Unrecoverable' ? 'bg-slate-100 dark:bg-slate-800 text-slate-500' :
+                        'bg-rose-50 dark:bg-rose-900/30 text-rose-500'
+                      }`}>
+                        {row.status}
+                      </span>
+                    </td>
+                  )}
                 </tr>
               ))) : (<tr><td colSpan={type === 'processed' ? 5 : 4} className="px-6 py-20"><div className="flex flex-col items-center justify-center text-text-muted opacity-20 w-full"><FileSearch size={48} className="mb-3" /><p className="text-[12px] font-black uppercase tracking-[0.2em]">No records found</p></div></td></tr>)}
           </tbody>
@@ -286,19 +303,19 @@ const PostdatesView: React.FC<{ canManageDocuments: boolean, currentUser: AppUse
       return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
     });
 
-    const succeeded = currentMonthProcessed.filter(p => p.status === 'Succeeded');
-    const declined = currentMonthProcessed.filter(p => p.status === 'Declined' || p.status === 'Failed');
+    const succeeded = currentMonthProcessed.filter(p => p.status === 'Succeeded' || p.status === 'Recovered');
+    const declined = currentMonthProcessed.filter(p => p.status === 'Declined' || p.status === 'Failed' || p.status === 'Unrecoverable');
     
     const totalSucceeded = succeeded.reduce((sum, p) => sum + p.amount, 0);
     const totalDeclined = declined.reduce((sum, p) => sum + p.amount, 0);
     
     // Today's stats
     const todaySucceeded = currentMonthProcessed
-      .filter(p => p.status === 'Succeeded' && new Date(p.rawDate).toDateString() === todayStr)
+      .filter(p => (p.status === 'Succeeded' || p.status === 'Recovered') && new Date(p.rawDate).toDateString() === todayStr)
       .reduce((sum, p) => sum + p.amount, 0);
     
     const todayDeclined = currentMonthProcessed
-      .filter(p => (p.status === 'Declined' || p.status === 'Failed') && new Date(p.rawDate).toDateString() === todayStr)
+      .filter(p => (p.status === 'Declined' || p.status === 'Failed' || p.status === 'Unrecoverable') && new Date(p.rawDate).toDateString() === todayStr)
       .reduce((sum, p) => sum + p.amount, 0);
 
     // Total Remaining: scheduled for the remainder of the active month

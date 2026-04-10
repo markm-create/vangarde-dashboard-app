@@ -8,7 +8,7 @@ interface Payment {
   owner: string; 
   dateTime: string; 
   amount: number; 
-  status: 'Scheduled' | 'Succeeded' | 'Declined' | 'Failed'; 
+  status: 'Scheduled' | 'Succeeded' | 'Declined' | 'Failed' | 'Recovered' | 'Rescheduled' | 'Unrecoverable'; 
   rawDate: Date; 
 }
 
