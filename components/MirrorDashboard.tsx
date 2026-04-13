@@ -157,18 +157,30 @@ const MirrorDashboard: React.FC<MirrorDashboardProps> = ({ currentUser }) => {
   const currentStats = useMemo(() => {
     let stats = [...mirrorData[timeSlot]];
     
-    // Filter out Unassigned and House File
-    stats = stats.filter(agent => {
-      const name = agent.name.toLowerCase();
-      return name !== 'unassigned' && name !== 'house file';
-    });
-
     // Filter for collector role
     if (currentUser.role.toLowerCase() === 'collector') {
       stats = stats.filter(agent => agent.name.toLowerCase() === currentUser.name.toLowerCase());
     }
     
-    return stats.sort((a, b) => sortKey === 'name' ? a.name.localeCompare(b.name) : (b[sortKey] as number) - (a[sortKey] as number));
+    stats.sort((a, b) => sortKey === 'name' ? a.name.localeCompare(b.name) : (b[sortKey] as number) - (a[sortKey] as number));
+
+    // Move Unassigned and House File to the bottom
+    const regularStats: AgentMirrorStats[] = [];
+    const bottomStats: AgentMirrorStats[] = [];
+
+    stats.forEach(agent => {
+      const name = agent.name.toLowerCase();
+      if (name === 'unassigned' || name === 'house file') {
+        bottomStats.push(agent);
+      } else {
+        regularStats.push(agent);
+      }
+    });
+
+    // Sort bottom stats so Unassigned and House File are consistently ordered
+    bottomStats.sort((a, b) => a.name.localeCompare(b.name));
+
+    return [...regularStats, ...bottomStats];
   }, [mirrorData, timeSlot, sortKey, currentUser]);
 
   const formatCurrency = (val: number | string) => {
