@@ -146,6 +146,15 @@ const Sidebar: React.FC<SidebarProps> = ({
       );
     }
 
+    // Filter out special handling accounts from the sidebar
+    filtered = filtered.filter(c => {
+      const name = c.name.toLowerCase().trim();
+      return name !== 'unassigned' && 
+             name !== 'house file' && 
+             name !== 'kkarter - special handling' && 
+             name !== 'kkoson - special handling';
+    });
+
     return [...filtered].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
   }, [collectors.data, role, currentUser.name, permissions]);
 

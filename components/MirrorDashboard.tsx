@@ -10,14 +10,25 @@ import {
   Download,
   ArrowDownWideNarrow,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  PieChart
 } from 'lucide-react';
+import {
+  ComposedChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from 'recharts';
 import { useData } from '../DataContext';
 
 import { AppUser } from '../types';
 import { CONFIG } from '../constants';
 
-type ViewMode = 'grid' | 'list';
+type ViewMode = 'grid' | 'list' | 'charts';
 type TimeSlot = '10:00 AM' | '12:00 PM' | '2:00 PM' | '4:00 PM' | '6:00 PM';
 type SortKey = 'name' | 'currentAssigned' | 'accountsWorked' | 'outboundCalls' | 'inboundCalls' | 'completedCalls' | 'collected' | 'missedCalls';
 
@@ -159,25 +170,32 @@ const MirrorDashboard: React.FC<MirrorDashboardProps> = ({ currentUser }) => {
     
     // Filter for collector role
     if (currentUser.role.toLowerCase() === 'collector') {
-      stats = stats.filter(agent => agent.name.toLowerCase() === currentUser.name.toLowerCase());
+      stats = stats.filter(agent => {
+        const name = agent.name.toLowerCase();
+        return name === currentUser.name.toLowerCase() || 
+               name === 'unassigned' || 
+               name === 'house file' ||
+               name === 'kkarter - special handling' ||
+               name === 'kkoson - special handling';
+      });
     }
     
     stats.sort((a, b) => sortKey === 'name' ? a.name.localeCompare(b.name) : (b[sortKey] as number) - (a[sortKey] as number));
 
-    // Move Unassigned and House File to the bottom
+    // Move special accounts to the bottom
     const regularStats: AgentMirrorStats[] = [];
     const bottomStats: AgentMirrorStats[] = [];
 
     stats.forEach(agent => {
       const name = agent.name.toLowerCase();
-      if (name === 'unassigned' || name === 'house file') {
+      if (name === 'unassigned' || name === 'house file' || name === 'kkarter - special handling' || name === 'kkoson - special handling') {
         bottomStats.push(agent);
       } else {
         regularStats.push(agent);
       }
     });
 
-    // Sort bottom stats so Unassigned and House File are consistently ordered
+    // Sort bottom stats so they are consistently ordered
     bottomStats.sort((a, b) => a.name.localeCompare(b.name));
 
     return [...regularStats, ...bottomStats];
@@ -199,6 +217,42 @@ const MirrorDashboard: React.FC<MirrorDashboardProps> = ({ currentUser }) => {
     }
     return val;
   };
+
+  const parseDurationToMinutes = (durationStr: string) => {
+    const formatted = formatDuration(durationStr);
+    if (!formatted) return 0;
+    
+    // Handle format like "1h 30m"
+    if (formatted.includes('h') || formatted.includes('m')) {
+      let mins = 0;
+      const hMatch = formatted.match(/(\d+)h/);
+      if (hMatch) mins += parseInt(hMatch[1]) * 60;
+      const mMatch = formatted.match(/(\d+)m/);
+      if (mMatch) mins += parseInt(mMatch[1]);
+      return mins;
+    }
+    
+    // Handle format like "0:00:00" or "00:00"
+    const parts = formatted.split(':').map(Number);
+    if (parts.length === 3) {
+      return parts[0] * 60 + parts[1] + parts[2] / 60;
+    } else if (parts.length === 2) {
+      return parts[0] + parts[1] / 60;
+    }
+    return 0;
+  };
+
+  const chartData = useMemo(() => {
+    return currentStats.map(agent => ({
+      name: agent.name,
+      collected: agent.collected,
+      worked: agent.accountsWorked,
+      outbound: agent.outboundCalls,
+      inbound: agent.inboundCalls,
+      missed: agent.missedCalls,
+      duration: parseDurationToMinutes(agent.callDuration)
+    }));
+  }, [currentStats]);
 
   return (
     <div className="p-8 space-y-8 bg-app min-h-screen animate-in fade-in duration-500 font-sans pb-24">
@@ -243,6 +297,7 @@ const MirrorDashboard: React.FC<MirrorDashboardProps> = ({ currentUser }) => {
           <div className="bg-card p-1 rounded-xl shadow-sm border border-border-subtle flex items-center h-11">
             <button onClick={() => handleViewModeChange('grid')} className={`p-2 h-full rounded-lg transition-all flex items-center px-3 ${viewMode === 'grid' ? 'bg-surface-100 text-indigo-600 shadow-inner' : 'text-text-muted hover:text-text-main'}`}><LayoutGrid size={20} /></button>
             <button onClick={() => handleViewModeChange('list')} className={`p-2 h-full rounded-lg transition-all flex items-center px-3 ${viewMode === 'list' ? 'bg-surface-100 text-indigo-600 shadow-inner' : 'text-text-muted hover:text-text-main'}`}><List size={20} /></button>
+            <button onClick={() => handleViewModeChange('charts')} className={`p-2 h-full rounded-lg transition-all flex items-center px-3 ${viewMode === 'charts' ? 'bg-surface-100 text-indigo-600 shadow-inner' : 'text-text-muted hover:text-text-main'}`}><PieChart size={20} /></button>
           </div>
         </div>
       </div>
@@ -266,7 +321,7 @@ const MirrorDashboard: React.FC<MirrorDashboardProps> = ({ currentUser }) => {
             </div>
           ))}
         </div>
-      ) : (
+      ) : viewMode === 'list' ? (
         <div className="bg-card rounded-2xl border border-border-subtle shadow-sm overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse whitespace-nowrap">
@@ -300,6 +355,97 @@ const MirrorDashboard: React.FC<MirrorDashboardProps> = ({ currentUser }) => {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-8 animate-in fade-in duration-300">
+          {/* Collection Chart */}
+          <div className="p-6 h-[500px] w-full bg-card rounded-2xl border border-border-subtle shadow-sm flex flex-col">
+            <div className="flex justify-between items-center mb-6 shrink-0">
+              <h3 className="text-lg font-bold text-text-main">Collector Collection Comparison</h3>
+            </div>
+            <div className="flex-1 min-h-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart
+                  data={chartData}
+                  margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis 
+                    dataKey="name" 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#64748b', fontSize: 12, fontWeight: 600 }}
+                    dy={10}
+                  />
+                  <YAxis 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#64748b', fontSize: 12 }}
+                    tickFormatter={(value) => `$${value >= 1000 ? value / 1000 + 'k' : value}`}
+                    dx={-10}
+                  />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)' }}
+                    labelStyle={{ color: '#1e293b', fontWeight: 'bold', marginBottom: '8px' }}
+                    formatter={(value: number, name: string) => [formatCurrency(value), name]}
+                  />
+                  <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                  <Bar dataKey="collected" name="Collected" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={40} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Performance Chart */}
+          <div className="p-6 h-[500px] w-full bg-card rounded-2xl border border-border-subtle shadow-sm flex flex-col">
+            <div className="flex justify-between items-center mb-6 shrink-0">
+              <h3 className="text-lg font-bold text-text-main">Collector Activity Metrics</h3>
+            </div>
+            <div className="flex-1 min-h-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart
+                  data={chartData}
+                  margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis 
+                    dataKey="name" 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#64748b', fontSize: 12, fontWeight: 600 }}
+                    dy={10}
+                  />
+                  <YAxis 
+                    yAxisId="left" 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#64748b', fontSize: 12 }}
+                    dx={-10}
+                  />
+                  <YAxis 
+                    yAxisId="right" 
+                    orientation="right" 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#64748b', fontSize: 12 }}
+                    dx={10}
+                    tickFormatter={(val) => `${val}m`}
+                  />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)' }}
+                    labelStyle={{ color: '#1e293b', fontWeight: 'bold', marginBottom: '8px' }}
+                    formatter={(value: number, name: string) => name === 'Call Duration (mins)' ? [`${value.toFixed(1)} mins`, name] : [value, name]}
+                  />
+                  <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                  <Bar yAxisId="left" dataKey="worked" name="Accounts Worked" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} />
+                  <Bar yAxisId="left" dataKey="outbound" name="Outbound Calls" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={20} />
+                  <Bar yAxisId="left" dataKey="inbound" name="Inbound Calls" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} />
+                  <Bar yAxisId="left" dataKey="missed" name="Missed Calls" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={20} />
+                  <Bar yAxisId="right" dataKey="duration" name="Call Duration (mins)" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={20} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
       )}

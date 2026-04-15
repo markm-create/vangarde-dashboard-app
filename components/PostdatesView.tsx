@@ -303,19 +303,19 @@ const PostdatesView: React.FC<{ canManageDocuments: boolean, currentUser: AppUse
       return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
     });
 
-    const succeeded = currentMonthProcessed.filter(p => p.status === 'Succeeded' || p.status === 'Recovered');
-    const declined = currentMonthProcessed.filter(p => p.status === 'Declined' || p.status === 'Failed' || p.status === 'Unrecoverable');
+    const succeeded = currentMonthProcessed.filter(p => p.status === 'Succeeded');
+    const declined = currentMonthProcessed.filter(p => p.status === 'Declined' || p.status === 'Failed' || p.status === 'Unrecoverable' || p.status === 'Recovered' || p.status === 'Rescheduled');
     
     const totalSucceeded = succeeded.reduce((sum, p) => sum + p.amount, 0);
     const totalDeclined = declined.reduce((sum, p) => sum + p.amount, 0);
     
     // Today's stats
     const todaySucceeded = currentMonthProcessed
-      .filter(p => (p.status === 'Succeeded' || p.status === 'Recovered') && new Date(p.rawDate).toDateString() === todayStr)
+      .filter(p => p.status === 'Succeeded' && new Date(p.rawDate).toDateString() === todayStr)
       .reduce((sum, p) => sum + p.amount, 0);
     
     const todayDeclined = currentMonthProcessed
-      .filter(p => (p.status === 'Declined' || p.status === 'Failed' || p.status === 'Unrecoverable') && new Date(p.rawDate).toDateString() === todayStr)
+      .filter(p => (p.status === 'Declined' || p.status === 'Failed' || p.status === 'Unrecoverable' || p.status === 'Recovered' || p.status === 'Rescheduled') && new Date(p.rawDate).toDateString() === todayStr)
       .reduce((sum, p) => sum + p.amount, 0);
 
     // Total Remaining: scheduled for the remainder of the active month
@@ -342,6 +342,7 @@ const PostdatesView: React.FC<{ canManageDocuments: boolean, currentUser: AppUse
     }
 
     const recoveryRate = totalDeclined > 0 ? ((totalRecovered / totalDeclined) * 100).toFixed(1) : "0.0";
+    const succeededPlusRecoveredRate = totalAmountProcessed > 0 ? (((totalSucceeded + totalRecovered) / totalAmountProcessed) * 100).toFixed(1) : "0.0";
 
     return {
       totalSucceeded,
@@ -356,7 +357,8 @@ const PostdatesView: React.FC<{ canManageDocuments: boolean, currentUser: AppUse
       monthlyStart: postdates.monthlyStart || 0,
       successRate,
       declineRate,
-      recoveryRate
+      recoveryRate,
+      succeededPlusRecoveredRate
     };
   }, [processedData, scheduledData, postdates.totalRecovered, postdates.weeklyStart, postdates.monthlyStart, individualCollectors.data, isCollector, currentUser.name]);
 
@@ -364,7 +366,7 @@ const PostdatesView: React.FC<{ canManageDocuments: boolean, currentUser: AppUse
     { l: "TOTAL SUCCEEDED", v: `$${stats.totalSucceeded.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, r: `${stats.successRate}%`, theme: "emerald" }, 
     { l: "TOTAL DECLINED", v: `$${stats.totalDeclined.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, r: `${stats.declineRate}%`, theme: "rose" }, 
     { l: "TOTAL RECOVERED", v: `$${stats.totalRecovered.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, r: `${stats.recoveryRate}%`, theme: "blue" },
-    { l: "SUCCEEDED + RECOVERED", v: `$${stats.totalSucceededPlusRecovered.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, theme: "teal" },
+    { l: "SUCCEEDED + RECOVERED", v: `$${stats.totalSucceededPlusRecovered.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, r: `${stats.succeededPlusRecoveredRate}%`, theme: "teal" },
     { l: "TOTAL PROCESSED", v: `$${stats.totalProcessed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, theme: "purple" }
   ];
   

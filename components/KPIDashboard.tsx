@@ -129,32 +129,52 @@ const KPIDashboard: React.FC = () => {
   const sortedData = useMemo(() => {
     const sourceData = (kpi.data.length > 0 && !kpi.isLoading) ? kpi.data : COLLECTORS.map(c => getMockData(c.name));
     
-    if (!sortConfig) return sourceData;
-
-    return [...sourceData].sort((a, b) => {
-      const keys = sortConfig.key.split('.');
-      let valA = a;
-      let valB = b;
-      
-      for (const key of keys) {
-        valA = valA?.[key];
-        valB = valB?.[key];
-      }
-
-      // Handle string numbers with currency/percentages
-      if (typeof valA === 'string' && typeof valB === 'string') {
-        const numA = parseFloat(valA.replace(/[^0-9.-]+/g, ""));
-        const numB = parseFloat(valB.replace(/[^0-9.-]+/g, ""));
-        if (!isNaN(numA) && !isNaN(numB)) {
-          valA = numA;
-          valB = numB;
+    let sorted = [...sourceData];
+    
+    if (sortConfig) {
+      sorted.sort((a, b) => {
+        const keys = sortConfig.key.split('.');
+        let valA = a;
+        let valB = b;
+        
+        for (const key of keys) {
+          valA = valA?.[key];
+          valB = valB?.[key];
         }
-      }
 
-      if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
-      if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
-      return 0;
+        // Handle string numbers with currency/percentages
+        if (typeof valA === 'string' && typeof valB === 'string') {
+          const numA = parseFloat(valA.replace(/[^0-9.-]+/g, ""));
+          const numB = parseFloat(valB.replace(/[^0-9.-]+/g, ""));
+          if (!isNaN(numA) && !isNaN(numB)) {
+            valA = numA;
+            valB = numB;
+          }
+        }
+
+        if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    // Pin special accounts to the bottom
+    const regularStats: any[] = [];
+    const bottomStats: any[] = [];
+
+    sorted.forEach(agent => {
+      const name = agent.collectorName?.toLowerCase() || '';
+      if (name === 'unassigned' || name === 'house file' || name === 'kkarter - special handling' || name === 'kkoson - special handling') {
+        bottomStats.push(agent);
+      } else {
+        regularStats.push(agent);
+      }
     });
+
+    // Sort bottom stats so they are consistently ordered
+    bottomStats.sort((a, b) => (a.collectorName || '').localeCompare(b.collectorName || ''));
+
+    return [...regularStats, ...bottomStats];
   }, [kpi.data, kpi.isLoading, sortConfig]);
 
   const collectionSummary = useMemo(() => {
