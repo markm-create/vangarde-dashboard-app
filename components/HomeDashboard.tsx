@@ -68,46 +68,38 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
   }, [fetchHome, fetchPostdates, fetchImports, fetchFlaggedAccounts, fetchCallPerformance, fetchOverduePayments, fetchOnboardingAudits]);
 
   const stats = useMemo(() => {
-    // Prefer data from home.data.dailyMetrics as it uses specific spreadsheet cells (M4, N4, O3)
-    if (home.data?.dailyMetrics) {
-      const dm = home.data.dailyMetrics;
-      return {
-        declineRate: { val: (dm.declinedRate || 0).toFixed(1), change: 0, isIncrease: false },
-        successRate: { val: (dm.successRate || 0).toFixed(1), change: 0, isIncrease: true },
-        processed: { val: dm.processedPostdates || 0, count: dm.processedCount || 0, change: 0, isIncrease: true },
-      };
-    }
-
     let succeeded = 0;
     let declined = 0;
-    let total = 0;
     let succeededAmount = 0;
+    let declinedAmount = 0;
 
     const todayStr = new Date().toDateString();
 
     if (postdates.processed && postdates.processed.length > 0) {
       postdates.processed.forEach((p: any) => {
         if (p.rawDate && new Date(p.rawDate).toDateString() === todayStr) {
-          total++;
           if (p.status === 'Succeeded') {
             succeeded++;
             succeededAmount += (p.amount || 0);
-          } else if (p.status === 'Failed' || p.status === 'Declined') {
+          } else if (p.status === 'Declined' || p.status === 'Failed' || p.status === 'Unrecoverable' || p.status === 'Recovered' || p.status === 'Rescheduled') {
             declined++;
+            declinedAmount += (p.amount || 0);
           }
         }
       });
     }
 
-    const successRate = total > 0 ? (succeeded / total) * 100 : 0;
-    const declineRate = total > 0 ? (declined / total) * 100 : 0;
+    const totalAmountProcessed = succeededAmount + declinedAmount;
+    const totalCountProcessed = succeeded + declined;
+    const successRate = totalAmountProcessed > 0 ? (succeededAmount / totalAmountProcessed) * 100 : 0;
+    const declineRate = totalAmountProcessed > 0 ? (declinedAmount / totalAmountProcessed) * 100 : 0;
 
     return {
       declineRate: { val: declineRate.toFixed(1), change: 0, isIncrease: false },
       successRate: { val: successRate.toFixed(1), change: 0, isIncrease: true },
-      processed: { val: succeededAmount, count: succeeded, change: 0, isIncrease: true },
+      processed: { val: totalAmountProcessed, count: totalCountProcessed, change: 0, isIncrease: true },
     };
-  }, [postdates.processed, home.data]);
+  }, [postdates.processed]);
 
   const opsMetrics = useMemo(() => {
     // 1. New Imports
