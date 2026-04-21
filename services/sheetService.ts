@@ -13,6 +13,7 @@ export const sheetService = {
 
       const response = await fetch(url.toString(), {
         method: 'GET',
+        credentials: 'omit',
         cache: 'no-store'
       });
       
@@ -39,6 +40,7 @@ export const sheetService = {
 
       const response = await fetch(url.toString(), {
         method: 'GET',
+        credentials: 'omit',
         cache: 'no-store'
       });
       
@@ -69,6 +71,7 @@ export const sheetService = {
       
       const response = await fetch(url.toString(), {
         method: 'GET',
+        credentials: 'omit',
         cache: 'no-store'
       });
       
@@ -92,6 +95,7 @@ export const sheetService = {
       const urlWithParams = `${ACCOUNT_CLOSURE_AUDIT_SCRIPT_URL}${ACCOUNT_CLOSURE_AUDIT_SCRIPT_URL.includes('?') ? '&' : '?'}action=getAccountClosureAudit&t=${Date.now()}`;
       const response = await fetch(urlWithParams, {
         method: 'GET',
+        credentials: 'omit',
         cache: 'no-store'
       });
       
@@ -113,6 +117,7 @@ export const sheetService = {
 
       const response = await fetch(url.toString(), {
         method: 'GET',
+        credentials: 'omit',
         cache: 'no-store'
       });
       
@@ -144,6 +149,7 @@ export const sheetService = {
 
       const response = await fetch(url.toString(), {
         method: 'GET',
+        credentials: 'omit',
         cache: 'no-store'
       });
       
@@ -177,6 +183,7 @@ export const sheetService = {
 
       const response = await fetch(url.toString(), {
         method: 'GET',
+        credentials: 'omit',
         // Removing explicit mode: 'cors' to let the browser handle defaults
         // which is often more reliable for Google Script redirects
       });
@@ -213,6 +220,7 @@ export const sheetService = {
       
       const response = await fetch(url.toString(), {
         method: 'GET',
+        credentials: 'omit',
         cache: 'no-store'
       });
       
@@ -240,6 +248,7 @@ export const sheetService = {
       
       const response = await fetch(url.toString(), {
         method: 'GET',
+        credentials: 'omit',
         cache: 'no-store'
       });
       
@@ -264,7 +273,7 @@ export const sheetService = {
       const response = await fetch(RPC_SCRIPT_URL, {
         method: 'POST',
         credentials: 'omit',
-        redirect: 'follow', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action: 'getRPCLogs' })
       });
       const result = await response.json();
@@ -283,7 +292,7 @@ export const sheetService = {
       const response = await fetch(RPC_SCRIPT_URL, {
         method: 'POST',
         credentials: 'omit',
-        redirect: 'follow', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action: 'createRPCLog', payload }),
       });
       const result = await response.json();
@@ -299,7 +308,7 @@ export const sheetService = {
       const response = await fetch(RPC_SCRIPT_URL, {
         method: 'POST',
         credentials: 'omit',
-        redirect: 'follow', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action: 'updateRPCLog', payload }),
       });
       const result = await response.json();
@@ -315,7 +324,7 @@ export const sheetService = {
       const response = await fetch(RPC_SCRIPT_URL, {
         method: 'POST',
         credentials: 'omit',
-        redirect: 'follow', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action: 'deleteRPCLog', payload: { id } }),
       });
       const result = await response.json();
@@ -332,7 +341,7 @@ export const sheetService = {
       const response = await fetch(REMINDERS_SCRIPT_URL, {
         method: 'POST',
         credentials: 'omit',
-        redirect: 'follow', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action: 'getReminders' })
       });
       const result = await response.json();
@@ -352,7 +361,7 @@ export const sheetService = {
       const response = await fetch(REMINDERS_SCRIPT_URL, {
         method: 'POST',
         credentials: 'omit',
-        redirect: 'follow', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action: 'createReminder', payload }),
       });
       const result = await response.json();
@@ -370,7 +379,7 @@ export const sheetService = {
       let response = await fetch(REMINDERS_SCRIPT_URL, {
         method: 'POST',
         credentials: 'omit',
-        redirect: 'follow', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action: 'updateReminder', payload }),
       });
       let result = await response.json();
@@ -380,16 +389,16 @@ export const sheetService = {
         if (typeof payload.id === 'string' && !isNaN(Number(payload.id))) {
           response = await fetch(REMINDERS_SCRIPT_URL, {
             method: 'POST',
-            credentials: 'omit',
-            redirect: 'follow', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        credentials: 'omit',
+        redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({ action: 'updateReminder', payload: { ...payload, id: Number(payload.id) } }),
           });
           result = await response.json();
         } else if (typeof payload.id === 'number') {
           response = await fetch(REMINDERS_SCRIPT_URL, {
             method: 'POST',
-            credentials: 'omit',
-            redirect: 'follow', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        credentials: 'omit',
+        redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({ action: 'updateReminder', payload: { ...payload, id: String(payload.id) } }),
           });
           result = await response.json();
@@ -410,7 +419,7 @@ export const sheetService = {
       let response = await fetch(REMINDERS_SCRIPT_URL, {
         method: 'POST',
         credentials: 'omit',
-        redirect: 'follow', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action: 'deleteReminder', payload: { id } }),
       });
       let result = await response.json();
@@ -420,16 +429,16 @@ export const sheetService = {
         if (typeof id === 'string' && !isNaN(Number(id))) {
           response = await fetch(REMINDERS_SCRIPT_URL, {
             method: 'POST',
-            credentials: 'omit',
-            redirect: 'follow', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        credentials: 'omit',
+        redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({ action: 'deleteReminder', payload: { id: Number(id) } }),
           });
           result = await response.json();
         } else if (typeof id === 'number') {
           response = await fetch(REMINDERS_SCRIPT_URL, {
             method: 'POST',
-            credentials: 'omit',
-            redirect: 'follow', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        credentials: 'omit',
+        redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({ action: 'deleteReminder', payload: { id: String(id) } }),
           });
           result = await response.json();
@@ -449,7 +458,7 @@ export const sheetService = {
       const response = await fetch(POSTDATES_SCRIPT_URL, {
         method: 'POST',
         credentials: 'omit',
-        redirect: 'follow', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action: 'getPostdatesData' })
       });
       const result = await response.json();
@@ -478,6 +487,7 @@ export const sheetService = {
       
       const response = await fetch(url.toString(), {
         method: 'GET',
+        credentials: 'omit',
         cache: 'no-store'
       });
       
@@ -537,6 +547,7 @@ export const sheetService = {
       
       const response = await fetch(url.toString(), {
         method: 'GET',
+        credentials: 'omit',
         cache: 'no-store'
       });
       
@@ -574,6 +585,7 @@ export const sheetService = {
       
       const response = await fetch(url.toString(), {
         method: 'GET',
+        credentials: 'omit',
         cache: 'no-store'
       });
       
@@ -596,7 +608,8 @@ export const sheetService = {
     try {
       const response = await fetch(OVERDUE_PAYMENTS_SCRIPT_URL, {
         method: 'POST',
-        redirect: 'follow', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        credentials: 'omit',
+        redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action: 'getPayments' })
       });
       if (!response.ok) throw new Error('Failed to fetch overdue payments');
@@ -620,6 +633,7 @@ export const sheetService = {
 
       const response = await fetch(url.toString(), {
         method: 'GET',
+        credentials: 'omit',
         cache: 'no-store'
       });
       
@@ -653,6 +667,7 @@ export const sheetService = {
 
       const response = await fetch(url.toString(), {
         method: 'GET',
+        credentials: 'omit',
         cache: 'no-store'
       });
       
@@ -686,6 +701,7 @@ export const sheetService = {
       const urlWithParams = `${BILLING_AUDIT_SCRIPT_URL}${BILLING_AUDIT_SCRIPT_URL.includes('?') ? '&' : '?'}t=${Date.now()}`;
       const response = await fetch(urlWithParams, {
         method: 'GET',
+        credentials: 'omit',
         cache: 'no-store'
       });
       
@@ -712,6 +728,7 @@ export const sheetService = {
 
       const response = await fetch(url.toString(), {
         method: 'GET',
+        credentials: 'omit',
         cache: 'no-store'
       });
       

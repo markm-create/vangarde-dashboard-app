@@ -29,7 +29,7 @@ import { AppUser } from '../types';
 import { CONFIG } from '../constants';
 
 type ViewMode = 'grid' | 'list' | 'charts';
-type TimeSlot = '10:00 AM' | '12:00 PM' | '2:00 PM' | '4:00 PM' | '6:00 PM';
+type TimeSlot = '10:00 AM' | '11:00 AM' | '12:00 PM' | '1:00 PM' | '2:00 PM' | '3:00 PM' | '4:00 PM' | '5:00 PM' | '6:00 PM';
 type SortKey = 'name' | 'currentAssigned' | 'accountsWorked' | 'outboundCalls' | 'inboundCalls' | 'completedCalls' | 'collected' | 'missedCalls';
 
 interface AgentMirrorStats { 
@@ -41,6 +41,8 @@ interface AgentMirrorStats {
   completedCalls: number; 
   missedCalls: number;
   callDuration: string; 
+  totalCallTime: string;
+  totalHoldTime: string;
   collected: number; 
 }
 
@@ -85,9 +87,13 @@ const MirrorDashboard: React.FC<MirrorDashboardProps> = ({ currentUser }) => {
     if (mirror.data && mirror.data.length > 0) {
       const slots: Record<TimeSlot, AgentMirrorStats[]> = {
         '10:00 AM': [],
+        '11:00 AM': [],
         '12:00 PM': [],
+        '1:00 PM': [],
         '2:00 PM': [],
+        '3:00 PM': [],
         '4:00 PM': [],
+        '5:00 PM': [],
         '6:00 PM': []
       };
 
@@ -103,7 +109,7 @@ const MirrorDashboard: React.FC<MirrorDashboardProps> = ({ currentUser }) => {
 
         const name = agent.name || 'Unknown Agent';
 
-        const timeSlots: TimeSlot[] = ['10:00 AM', '12:00 PM', '2:00 PM', '4:00 PM', '6:00 PM'];
+        const timeSlots: TimeSlot[] = ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM'];
         
         timeSlots.forEach(slot => {
           const slotData = agent[slot] || {};
@@ -117,7 +123,9 @@ const MirrorDashboard: React.FC<MirrorDashboardProps> = ({ currentUser }) => {
             inboundCalls: cleanNum(slotData.inbound),
             completedCalls: cleanNum(slotData.outbound) + cleanNum(slotData.inbound),
             missedCalls: cleanNum(slotData.missed),
-            callDuration: String(slotData.duration || "0:00:00"),
+            callDuration: String(slotData.duration || slotData.averageCallTime || "0:00:00"),
+            totalCallTime: String(slotData.totalCallTime || "0:00:00"),
+            totalHoldTime: String(slotData.totalHoldTime || "0:00:00"),
             collected: cleanNum(slotData.collected)
           });
         });
@@ -128,10 +136,14 @@ const MirrorDashboard: React.FC<MirrorDashboardProps> = ({ currentUser }) => {
 
     const generateStats = (slot: TimeSlot): AgentMirrorStats[] => {
       const mults: Record<TimeSlot, number> = {
-        '10:00 AM': 0.2,
-        '12:00 PM': 0.4,
-        '2:00 PM': 0.6,
-        '4:00 PM': 0.8,
+        '10:00 AM': 0.125,
+        '11:00 AM': 0.25,
+        '12:00 PM': 0.375,
+        '1:00 PM': 0.5,
+        '2:00 PM': 0.625,
+        '3:00 PM': 0.75,
+        '4:00 PM': 0.875,
+        '5:00 PM': 0.95,
         '6:00 PM': 1.0
       };
       const mult = mults[slot];
@@ -151,16 +163,22 @@ const MirrorDashboard: React.FC<MirrorDashboardProps> = ({ currentUser }) => {
           inboundCalls: inCalls, 
           completedCalls: Math.floor((outCalls + inCalls) * 0.75), 
           missedCalls: missed,
-          callDuration: `${Math.floor(2 * mult * seed)}h ${Math.floor(15 * mult)}m`, 
+          callDuration: `${Math.floor(5 * mult)}m ${Math.floor(15 * mult)}s`, 
+          totalCallTime: `${Math.floor(2 * mult * seed)}h ${Math.floor(15 * mult)}m`, 
+          totalHoldTime: `${Math.floor(0.5 * mult * seed)}h ${Math.floor(10 * mult)}m`, 
           collected: Math.floor(worked * 125 * mult) 
         };
       });
     };
     return { 
       '10:00 AM': generateStats('10:00 AM'), 
+      '11:00 AM': generateStats('11:00 AM'), 
       '12:00 PM': generateStats('12:00 PM'), 
+      '1:00 PM': generateStats('1:00 PM'), 
       '2:00 PM': generateStats('2:00 PM'), 
+      '3:00 PM': generateStats('3:00 PM'), 
       '4:00 PM': generateStats('4:00 PM'), 
+      '5:00 PM': generateStats('5:00 PM'), 
       '6:00 PM': generateStats('6:00 PM') 
     };
   }, [mirror.data, collectors.data]);
@@ -290,7 +308,7 @@ const MirrorDashboard: React.FC<MirrorDashboardProps> = ({ currentUser }) => {
             </select>
           </div>
           <div className="bg-card p-1 rounded-xl shadow-sm border border-border-subtle flex items-center h-11">
-            {(['10:00 AM', '12:00 PM', '2:00 PM', '4:00 PM', '6:00 PM'] as TimeSlot[]).map((slot) => (
+            {(['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM'] as TimeSlot[]).map((slot) => (
               <button key={slot} onClick={() => setTimeSlot(slot)} className={`px-4 h-full rounded-lg text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-2 ${timeSlot === slot ? 'bg-indigo-600 text-white shadow-md' : 'text-text-muted hover:text-indigo-600'}`}>{slot}</button>
             ))}
           </div>
@@ -333,7 +351,9 @@ const MirrorDashboard: React.FC<MirrorDashboardProps> = ({ currentUser }) => {
                   <th className="px-4 py-4 text-center border-l border-border-subtle/50">Outbound</th>
                   <th className="px-4 py-4 text-center">Inbound</th>
                   <th className="px-4 py-4 text-center border-r border-border-subtle/50">Missed</th>
-                  <th className="px-4 py-4 text-center">Duration</th>
+                  <th className="px-4 py-4 text-center">Avg Call Time</th>
+                  <th className="px-4 py-4 text-center">Total Call Time</th>
+                  <th className="px-4 py-4 text-center">Total Hold Time</th>
                   <th className="px-6 py-4 text-right">Collected</th>
                 </tr>
               </thead>
@@ -349,8 +369,10 @@ const MirrorDashboard: React.FC<MirrorDashboardProps> = ({ currentUser }) => {
                     <td className="px-4 py-4 text-center font-inter text-indigo-600/70 border-l border-border-subtle/30 bg-indigo-50/10 dark:bg-indigo-900/20">{agent.outboundCalls}</td>
                     <td className="px-4 py-4 text-center font-inter text-emerald-600/70 bg-emerald-50/10 dark:bg-emerald-900/20">{agent.inboundCalls}</td>
                     <td className="px-4 py-4 text-center font-inter text-rose-500/70 border-r border-border-subtle/30 bg-rose-50/10 dark:bg-rose-900/20">{agent.missedCalls}</td>
-                    <td className="px-4 py-4 text-center font-inter text-text-muted text-xs">{formatDuration(agent.callDuration)}</td>
-                    <td className="px-6 py-4 text-right font-black text-emerald-600 font-inter">{formatCurrency(agent.collected)}</td>
+                    <td className="px-4 py-4 text-center font-inter text-text-muted text-xs bg-surface-50 dark:bg-slate-800/20">{formatDuration(agent.callDuration)}</td>
+                    <td className="px-4 py-4 text-center font-inter text-text-muted text-xs bg-surface-50 dark:bg-slate-800/20">{formatDuration(agent.totalCallTime)}</td>
+                    <td className="px-4 py-4 text-center font-inter text-text-muted text-xs bg-surface-50 dark:bg-slate-800/20">{formatDuration(agent.totalHoldTime)}</td>
+                    <td className="px-6 py-4 text-right font-black text-emerald-600 font-inter border-l border-border-subtle/30">{formatCurrency(agent.collected)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -435,14 +457,14 @@ const MirrorDashboard: React.FC<MirrorDashboardProps> = ({ currentUser }) => {
                   <Tooltip 
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)' }}
                     labelStyle={{ color: '#1e293b', fontWeight: 'bold', marginBottom: '8px' }}
-                    formatter={(value: number, name: string) => name === 'Call Duration (mins)' ? [`${value.toFixed(1)} mins`, name] : [value, name]}
+                    formatter={(value: number, name: string) => name === 'Avg Call Time (mins)' ? [`${value.toFixed(1)} mins`, name] : [value, name]}
                   />
                   <Legend wrapperStyle={{ paddingTop: '20px' }} />
                   <Bar yAxisId="left" dataKey="worked" name="Accounts Worked" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} />
                   <Bar yAxisId="left" dataKey="outbound" name="Outbound Calls" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={20} />
                   <Bar yAxisId="left" dataKey="inbound" name="Inbound Calls" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} />
                   <Bar yAxisId="left" dataKey="missed" name="Missed Calls" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={20} />
-                  <Bar yAxisId="right" dataKey="duration" name="Call Duration (mins)" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={20} />
+                  <Bar yAxisId="right" dataKey="duration" name="Avg Call Time (mins)" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={20} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
