@@ -23,11 +23,26 @@ type CampaignView = 'menu' | 'initial' | 'sms';
 
 const CampaignDashboard: React.FC<CampaignDashboardProps> = ({ onBack, initialView = 'menu' }) => {
   const [view, setView] = useState<CampaignView>(initialView);
+  const [bypassedMenu, setBypassedMenu] = useState<boolean>(initialView !== 'menu');
 
   // Update view when initialView changes
   React.useEffect(() => {
     setView(initialView);
+    setBypassedMenu(initialView !== 'menu');
   }, [initialView]);
+
+  const handleSubviewBack = () => {
+    if (bypassedMenu && onBack) {
+      onBack();
+    } else {
+      setView('menu');
+    }
+  };
+
+  const handleMenuClick = (id: CampaignView) => {
+    setBypassedMenu(false);
+    setView(id);
+  };
 
 
   const campaigns = [
@@ -54,7 +69,7 @@ const CampaignDashboard: React.FC<CampaignDashboardProps> = ({ onBack, initialVi
   if (view === 'initial') {
     return (
       <InitialCampaignView 
-        onBack={() => setView('menu')} 
+        onBack={handleSubviewBack} 
       />
     );
   }
@@ -62,7 +77,7 @@ const CampaignDashboard: React.FC<CampaignDashboardProps> = ({ onBack, initialVi
   if (view === 'sms') {
     return (
       <SmsCampaignView 
-        onBack={() => setView('menu')} 
+        onBack={handleSubviewBack} 
       />
     );
   }
@@ -95,7 +110,7 @@ const CampaignDashboard: React.FC<CampaignDashboardProps> = ({ onBack, initialVi
         {campaigns.map((campaign) => (
           <button
             key={campaign.id}
-            onClick={() => setView(campaign.id as CampaignView)}
+            onClick={() => handleMenuClick(campaign.id as CampaignView)}
             className={`group relative bg-card border ${campaign.borderColor} rounded-[2rem] p-8 text-left transition-all hover:shadow-xl hover:-translate-y-1 active:scale-[0.98] overflow-hidden`}
           >
             {/* Background Accent */}
