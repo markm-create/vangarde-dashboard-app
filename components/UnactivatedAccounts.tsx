@@ -32,6 +32,11 @@ const UnactivatedAccounts: React.FC<UnactivatedAccountsProps> = ({ onBack }) => 
   const [sortField, setSortField] = useState<SortField>('lastWorkedDate');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [isSyncing, setIsSyncing] = useState(false);
+  
+  // Advanced Filter States
+  const [showFilters, setShowFilters] = useState(false);
+  const [collectorFilter, setCollectorFilter] = useState<string>('All');
+  const [creditorFilter, setCreditorFilter] = useState<string>('All');
 
   const fetchData = async (isManual = false) => {
     if (isManual) setIsSyncing(true);
@@ -39,12 +44,13 @@ const UnactivatedAccounts: React.FC<UnactivatedAccountsProps> = ({ onBack }) => 
     
     setError(null);
     try {
-      const url = new URL(UNACTIVATED_ACCOUNTS_SCRIPT_URL);
-      url.searchParams.set('t', Date.now().toString());
-
-      const response = await fetch(url.toString(), {
-        method: 'GET',
-        cache: 'no-store',
+      const response = await fetch(UNACTIVATED_ACCOUNTS_SCRIPT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8',
+        },
+        body: JSON.stringify({ action: 'getUnactivatedAccounts' }),
+        mode: 'cors',
         credentials: 'omit',
         redirect: 'follow'
       });
@@ -82,11 +88,14 @@ const UnactivatedAccounts: React.FC<UnactivatedAccountsProps> = ({ onBack }) => 
 
   const filteredAndSortedData = useMemo(() => {
     return data
-      .filter(item => 
-        Object.values(item).some(val => 
-          val.toString().toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      )
+      .filter(item => {
+        if (collectorFilter !== 'All' && item.collectorUsername !== collectorFilter) return false;
+        if (creditorFilter !== 'All' && item.creditorName !== creditorFilter) return false;
+
+        if (!searchTerm) return true;
+        const searchTarget = `${item.collectorUsername} ${item.creditorName} ${item.businessName} ${item.caseNumber}`.toLowerCase();
+        return searchTarget.includes(searchTerm.toLowerCase().trim());
+      })
       .sort((a, b) => {
         const aVal = a[sortField].toString().toLowerCase();
         const bVal = b[sortField].toString().toLowerCase();
@@ -94,7 +103,17 @@ const UnactivatedAccounts: React.FC<UnactivatedAccountsProps> = ({ onBack }) => 
         if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
         return 0;
       });
-  }, [data, searchTerm, sortField, sortOrder]);
+  }, [data, searchTerm, sortField, sortOrder, collectorFilter, creditorFilter]);
+
+  const uniqueCollectors = useMemo(() => {
+    const collectors = new Set(data.map(item => item.collectorUsername).filter(Boolean));
+    return Array.from(collectors).sort();
+  }, [data]);
+
+  const uniqueCreditors = useMemo(() => {
+    const creditors = new Set(data.map(item => item.creditorName).filter(Boolean));
+    return Array.from(creditors).sort();
+  }, [data]);
 
   const exportToCSV = () => {
     const headers = ['Last Worked Date', 'Case Number', 'Collector', 'Business Name', 'Creditor'];
@@ -186,7 +205,7 @@ const UnactivatedAccounts: React.FC<UnactivatedAccountsProps> = ({ onBack }) => 
       )}
 
       {/* Filters Bar */}
-      <div className="mb-6 flex gap-4 shrink-0">
+      <div className="mb-6 flex gap-4 shrink-0 relative">
         <div className="relative flex-1 group">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-indigo-500 transition-colors" size={18} />
           <input 
@@ -197,9 +216,51 @@ const UnactivatedAccounts: React.FC<UnactivatedAccountsProps> = ({ onBack }) => 
             className="w-full bg-white dark:bg-slate-800 border border-border-subtle rounded-[1.25rem] pl-12 pr-6 py-4 text-xs font-black uppercase tracking-widest outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/10 transition-all shadow-sm"
           />
         </div>
-        <button className="px-6 bg-white dark:bg-slate-800 border border-border-subtle rounded-[1.25rem] text-[11px] font-black uppercase tracking-widest text-text-muted hover:text-indigo-600 flex items-center gap-2 shadow-sm transition-all">
+        <button 
+          onClick={() => setShowFilters(!showFilters)}
+          className={`px-6 bg-white dark:bg-slate-800 border ${showFilters || collectorFilter !== 'All' || creditorFilter !== 'All' ? 'border-indigo-400 text-indigo-600' : 'border-border-subtle text-text-muted'} rounded-[1.25rem] text-[11px] font-black uppercase tracking-widest hover:text-indigo-600 flex items-center gap-2 shadow-sm transition-all relative`}
+        >
           <Filter size={16} /> Advanced Filter
+          {(collectorFilter !== 'All' || creditorFilter !== 'All') && (
+            <span className="absolute -top-1 -right-1 w-3 h-3 bg-rose-500 rounded-full"></span>
+          )}
         </button>
+
+        {/* Dropdown Menu */}
+        {showFilters && (
+          <div className="absolute top-full right-0 mt-3 p-6 bg-card border border-border-subtle rounded-2xl shadow-xl z-50 w-80 flex flex-col gap-4 animate-in fade-in slide-in-from-top-4">
+            <div>
+              <label className="text-[10px] uppercase font-black tracking-widest text-text-muted mb-2 block">Collector</label>
+              <select 
+                value={collectorFilter} 
+                onChange={(e) => setCollectorFilter(e.target.value)}
+                className="w-full bg-app border border-border-subtle rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none text-text-main"
+              >
+                <option value="All">All Collectors</option>
+                {uniqueCollectors.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] uppercase font-black tracking-widest text-text-muted mb-2 block">Creditor</label>
+              <select 
+                value={creditorFilter} 
+                onChange={(e) => setCreditorFilter(e.target.value)}
+                className="w-full bg-app border border-border-subtle rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none text-text-main"
+              >
+                <option value="All">All Creditors</option>
+                {uniqueCreditors.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            {(collectorFilter !== 'All' || creditorFilter !== 'All') && (
+              <button 
+                onClick={() => { setCollectorFilter('All'); setCreditorFilter('All'); setShowFilters(false); }}
+                className="mt-2 text-[10px] font-black uppercase tracking-widest text-rose-500 hover:text-rose-600 self-end transition-colors"
+              >
+                Clear Filters
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Main Table Container */}
@@ -218,12 +279,11 @@ const UnactivatedAccounts: React.FC<UnactivatedAccountsProps> = ({ onBack }) => 
             <tbody className="divide-y divide-border-subtle">
               {filteredAndSortedData.map((item, idx) => (
                 <tr key={idx} className="group hover:bg-surface-50 dark:hover:bg-slate-800/50 transition-all">
-                  <td className="py-5 px-4 font-inter text-[13px] font-medium text-text-main">
-                    <div className="flex flex-col">
-                        <span className="font-bold text-text-main">{item.lastWorkedDate}</span>
-                        <span className="text-[10px] text-text-muted uppercase font-black opacity-60">Archive Timestamp</span>
-                    </div>
-                  </td>
+                    <td className="py-5 px-4 font-inter text-[13px] font-medium text-text-main">
+                      <div className="flex flex-col">
+                          <span className="font-bold text-text-main">{item.lastWorkedDate}</span>
+                      </div>
+                    </td>
                   <td className="py-5 px-4">
                     <span className="px-3 py-1.5 bg-surface-100 rounded-lg text-[11px] font-black font-mono tracking-wider text-text-main border border-border-subtle/50 group-hover:border-indigo-200 transition-colors">
                         {item.caseNumber}
@@ -261,18 +321,7 @@ const UnactivatedAccounts: React.FC<UnactivatedAccountsProps> = ({ onBack }) => 
           </table>
         </div>
         
-        {/* Footer info */}
-        <div className="p-4 bg-surface-50 dark:bg-slate-900/30 border-t border-border-subtle flex justify-between items-center shrink-0">
-            <p className="text-[9px] font-black text-text-muted uppercase tracking-[0.2em]">
-                System Analytics • Unactivated Account Queue
-            </p>
-            <div className="flex items-center gap-4">
-                <div className="h-1.5 w-24 bg-white dark:bg-slate-800 rounded-full border border-border-subtle relative overflow-hidden">
-                    <div className="absolute top-0 left-0 h-full bg-emerald-500 w-full animate-in slide-in-from-left duration-1000"></div>
-                </div>
-                <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Database Synced</span>
-            </div>
-        </div>
+        {/* Removed Footer Info per user request */}
       </div>
     </div>
   );

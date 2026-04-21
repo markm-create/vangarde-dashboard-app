@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 import { TabType, AppUser } from '../types';
 import { useData } from '../DataContext';
-import { INITIAL_CAMPAIGN_SCRIPT_URL, SMS_CAMPAIGN_SCRIPT_URL } from '../constants';
+import { INITIAL_CAMPAIGN_SCRIPT_URL, SMS_CAMPAIGN_SCRIPT_URL, UNACTIVATED_ACCOUNTS_SCRIPT_URL } from '../constants';
 
 interface HomeDashboardProps {
   onNavigate: (tab: TabType, subView?: any) => void;
@@ -53,6 +53,7 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
   const [isCalendarExpanded, setIsCalendarExpanded] = useState(false);
   const [emailCampaignStats, setEmailCampaignStats] = useState({ sent: 0, responseRate: 0, isLoading: true });
   const [smsCampaignStats, setSmsCampaignStats] = useState({ sent: 0, responseRate: 0, isLoading: true });
+  const [unactivatedCount, setUnactivatedCount] = useState(24);
   const today = new Date();
   const dateString = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 
@@ -65,8 +66,8 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
     fetchOverduePayments();
     fetchOnboardingAudits();
     
-    // Fetch Initial Campaign Stats
-    const fetchCampaignStats = async () => {
+    // Fetch Campaign Stats & Unactivated Accounts Concurrently
+    const fetchEmailStats = async () => {
       try {
         const url = new URL(INITIAL_CAMPAIGN_SCRIPT_URL);
         url.searchParams.set('t', Date.now().toString());
@@ -92,7 +93,9 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
         console.error('Failed to fetch campaign stats:', err);
         setEmailCampaignStats({ sent: 0, responseRate: 0, isLoading: false });
       }
+    };
 
+    const fetchSmsStats = async () => {
       try {
         const urlSms = new URL(SMS_CAMPAIGN_SCRIPT_URL);
         urlSms.searchParams.set('t', Date.now().toString());
@@ -119,7 +122,34 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
         setSmsCampaignStats({ sent: 0, responseRate: 0, isLoading: false });
       }
     };
-    fetchCampaignStats();
+
+    const fetchUnactivatedStats = async () => {
+      try {
+        const responseUnactivated = await fetch(UNACTIVATED_ACCOUNTS_SCRIPT_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain;charset=utf-8',
+          },
+          body: JSON.stringify({ action: 'getUnactivatedAccounts' }),
+          mode: 'cors',
+          credentials: 'omit',
+          redirect: 'follow'
+        });
+        if (responseUnactivated.ok) {
+          const resultUnactivated = await responseUnactivated.json();
+          if (resultUnactivated.status === 'success' && Array.isArray(resultUnactivated.records)) {
+            setUnactivatedCount(resultUnactivated.records.length);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch Unactivated Accounts:', err);
+      }
+    };
+
+    // Execute all independent fetches concurrently
+    fetchEmailStats();
+    fetchSmsStats();
+    fetchUnactivatedStats();
 
     const interval = setInterval(() => {
       fetchHome(true);
@@ -237,13 +267,13 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
       });
     }
 
-    // 6. Inactivated Accounts (Example mock data or logic)
-    const inactivatedCount = home.data?.inactivatedCount || 24;
+    // 6. Inactivated Accounts
+    const inactivatedCount = unactivatedCount;
 
     return {
       imports: { count: totalImports, sub: lastImportDate },
       newImportsAudit: { count: newImportsAuditCount, label: "Failed & Pending" },
-      inactivated: { count: inactivatedCount, label: "Last 30 days" },
+      inactivated: { count: inactivatedCount, label: "Total in queue" },
       stagnant: { count: totalFlagged, label: "Accounts flagged" },
       callTime: { val: avgCallTimeStr },
       overdue: { 
@@ -251,7 +281,7 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
         count: overdueCount 
       }
     };
-  }, [imports.data, flaggedAccounts.data, callPerformance.data, overduePayments.data, onboardingAudits.data, home.data]);
+  }, [imports.data, flaggedAccounts.data, callPerformance.data, overduePayments.data, onboardingAudits.data, home.data, unactivatedCount]);
 
   const heroes = home.data?.yesterdayHeroes || [];
   const topCollectors = home.data?.topCollectors || [];
