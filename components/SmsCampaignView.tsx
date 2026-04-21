@@ -31,8 +31,11 @@ interface SmsCampaignViewProps {
 }
 
 const SmsCampaignView: React.FC<SmsCampaignViewProps> = ({ onBack }) => {
-  const [data, setData] = useState<SmsCampaignData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<SmsCampaignData[]>(() => {
+    const cached = localStorage.getItem('vg_smsCampaignData');
+    return cached ? JSON.parse(cached) : [];
+  });
+  const [loading, setLoading] = useState(() => !localStorage.getItem('vg_smsCampaignData'));
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -41,8 +44,8 @@ const SmsCampaignView: React.FC<SmsCampaignViewProps> = ({ onBack }) => {
   const [monthFilter, setMonthFilter] = useState(currentMonth);
   const [statusFilter, setStatusFilter] = useState('All');
 
-  const fetchData = async (force = false) => {
-    setLoading(true);
+  const fetchData = async (force = false, silent = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const url = new URL(SMS_CAMPAIGN_SCRIPT_URL);
@@ -67,23 +70,26 @@ const SmsCampaignView: React.FC<SmsCampaignViewProps> = ({ onBack }) => {
 
       if (Array.isArray(result)) {
         setData(result);
+        localStorage.setItem('vg_smsCampaignData', JSON.stringify(result));
       } else {
         console.error('Unexpected data format:', result);
         throw new Error('Sync Error: Data format mismatch (Expected Array)');
       }
     } catch (err) {
       console.error('Sync Error:', err);
-      const message = err instanceof Error ? err.message : 'Failed to fetch SMS campaign data';
-      setError(message === 'Failed to fetch' 
-        ? 'Connection Blocked. Please ensure the Google Script is deployed to "Anyone" and you are not logged into multiple Google accounts.' 
-        : message);
+      if (data.length === 0) {
+        const message = err instanceof Error ? err.message : 'Failed to fetch SMS campaign data';
+        setError(message === 'Failed to fetch' 
+          ? 'Connection Blocked. Please ensure the Google Script is deployed to "Anyone".' 
+          : message);
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
+    fetchData(false, data.length > 0);
   }, []);
 
   const dateFilteredData = useMemo(() => {

@@ -224,16 +224,30 @@ const MirrorDashboard: React.FC<MirrorDashboardProps> = ({ currentUser }) => {
     return `$${num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
-  const formatDuration = (val: string) => {
+  const formatDuration = (val: any) => {
     if (!val) return "0:00:00";
+    
+    const strVal = String(val);
+
+    // If it's a number (time serial from Excel/Google Sheets)
+    const num = parseFloat(strVal);
+    if (!isNaN(num) && !strVal.includes(':')) {
+      // 1.0 = 24 hours, so 86400 seconds
+      const totalSeconds = Math.round(num * 86400);
+      const h = Math.floor(totalSeconds / 3600);
+      const m = Math.floor((totalSeconds % 3600) / 60);
+      const s = totalSeconds % 60;
+      return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
     // If it's a full date string from Google (e.g. "Sat Dec 30 1899 00:14:41...")
-    if (val.includes('1899') || val.includes('GMT')) {
-      const parts = val.split(' ');
+    if (strVal.includes('1899') || strVal.includes('GMT')) {
+      const parts = strVal.split(' ');
       // Usually the time is the 5th element (index 4)
       const timePart = parts.find(p => p.includes(':') && p.split(':').length >= 2);
-      return timePart || val;
+      return timePart || strVal;
     }
-    return val;
+    return strVal;
   };
 
   const parseDurationToMinutes = (durationStr: string) => {

@@ -28,6 +28,7 @@ import NewAssignedAccounts from './components/NewAssignedAccounts';
 import CollectorInventory from './components/CollectorInventory';
 import UnactivatedAccounts from './components/UnactivatedAccounts';
 import Login from './Login';
+import { DataPreloader } from './components/DataPreloader';
 import { getDefaultPermissionsForRole, USER_SCRIPT_URL, CONFIG, COLLECTORS } from './constants';
 
 const parseCloudPermissions = (settings: any, role: string, email: string) => {
@@ -479,6 +480,7 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen font-sans bg-app text-text-main transition-colors duration-300">
+      <DataPreloader currentUser={currentUser} />
       <Sidebar 
         activeTab={activeTab} 
         selectedCollector={selectedCollector} 

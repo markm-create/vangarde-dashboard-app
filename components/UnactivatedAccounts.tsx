@@ -25,8 +25,11 @@ type SortField = keyof UnactivatedAccount;
 type SortOrder = 'asc' | 'desc';
 
 const UnactivatedAccounts: React.FC<UnactivatedAccountsProps> = ({ onBack }) => {
-  const [data, setData] = useState<UnactivatedAccount[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [data, setData] = useState<UnactivatedAccount[]>(() => {
+    const cached = localStorage.getItem('vg_unactDataList');
+    return cached ? JSON.parse(cached) : [];
+  });
+  const [isLoading, setIsLoading] = useState(() => !localStorage.getItem('vg_unactDataList'));
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<SortField>('lastWorkedDate');
@@ -38,9 +41,9 @@ const UnactivatedAccounts: React.FC<UnactivatedAccountsProps> = ({ onBack }) => 
   const [collectorFilter, setCollectorFilter] = useState<string>('All');
   const [creditorFilter, setCreditorFilter] = useState<string>('All');
 
-  const fetchData = async (isManual = false) => {
+  const fetchData = async (isManual = false, silent = false) => {
     if (isManual) setIsSyncing(true);
-    else setIsLoading(true);
+    else if (!silent) setIsLoading(true);
     
     setError(null);
     try {
@@ -60,21 +63,23 @@ const UnactivatedAccounts: React.FC<UnactivatedAccountsProps> = ({ onBack }) => 
       const result = await response.json();
       if (result.status === 'success' && Array.isArray(result.records)) {
         setData(result.records);
+        localStorage.setItem('vg_unactDataList', JSON.stringify(result.records));
       } else {
         throw new Error(result.message || 'The script returned an error or no records.');
       }
     } catch (err) {
       console.error('Fetch error:', err);
-      setError(err instanceof Error ? err.message : 'Connection to Google Sheets script failed. Please verify the deployment.');
-      setData([]);
+      if (data.length === 0) {
+        setError(err instanceof Error ? err.message : 'Connection to Google Sheets script failed. Please verify the deployment.');
+      }
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
       setIsSyncing(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
+    fetchData(false, data.length > 0);
   }, []);
 
   const handleSort = (field: SortField) => {

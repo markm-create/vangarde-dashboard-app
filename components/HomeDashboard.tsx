@@ -51,9 +51,18 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
     onboardingAudits, fetchOnboardingAudits
   } = useData();
   const [isCalendarExpanded, setIsCalendarExpanded] = useState(false);
-  const [emailCampaignStats, setEmailCampaignStats] = useState({ sent: 0, responseRate: 0, isLoading: true });
-  const [smsCampaignStats, setSmsCampaignStats] = useState({ sent: 0, responseRate: 0, isLoading: true });
-  const [unactivatedCount, setUnactivatedCount] = useState(24);
+  const [emailCampaignStats, setEmailCampaignStats] = useState(() => {
+    const cached = localStorage.getItem('vg_emailStats');
+    return cached ? { ...JSON.parse(cached), isLoading: false } : { sent: 0, responseRate: 0, isLoading: true };
+  });
+  const [smsCampaignStats, setSmsCampaignStats] = useState(() => {
+    const cached = localStorage.getItem('vg_smsStats');
+    return cached ? { ...JSON.parse(cached), isLoading: false } : { sent: 0, responseRate: 0, isLoading: true };
+  });
+  const [unactivatedCount, setUnactivatedCount] = useState(() => {
+    const cached = localStorage.getItem('vg_unactCount');
+    return cached ? parseInt(cached, 10) : 24;
+  });
   const today = new Date();
   const dateString = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 
@@ -82,16 +91,18 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
           if (Array.isArray(result)) {
             const total = result.length;
             const replied = result.filter(d => d.campaignStatus?.toLowerCase().includes('replied')).length;
-            setEmailCampaignStats({
+            const finalStats = {
               sent: total,
               responseRate: total > 0 ? ((replied / total) * 100) : 0,
               isLoading: false
-            });
+            };
+            setEmailCampaignStats(finalStats);
+            localStorage.setItem('vg_emailStats', JSON.stringify(finalStats));
           }
         }
       } catch (err) {
         console.error('Failed to fetch campaign stats:', err);
-        setEmailCampaignStats({ sent: 0, responseRate: 0, isLoading: false });
+        setEmailCampaignStats(prev => ({ ...prev, isLoading: false }));
       }
     };
 
@@ -110,16 +121,18 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
           if (Array.isArray(resultSms)) {
             const total = resultSms.length;
             const replied = resultSms.filter(d => d.campaignStatus?.toLowerCase().includes('replied')).length;
-            setSmsCampaignStats({
+            const finalStats = {
               sent: total,
               responseRate: total > 0 ? ((replied / total) * 100) : 0,
               isLoading: false
-            });
+            };
+            setSmsCampaignStats(finalStats);
+            localStorage.setItem('vg_smsStats', JSON.stringify(finalStats));
           }
         }
       } catch (err) {
         console.error('Failed to fetch SMS campaign stats:', err);
-        setSmsCampaignStats({ sent: 0, responseRate: 0, isLoading: false });
+        setSmsCampaignStats(prev => ({ ...prev, isLoading: false }));
       }
     };
 
@@ -138,7 +151,9 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
         if (responseUnactivated.ok) {
           const resultUnactivated = await responseUnactivated.json();
           if (resultUnactivated.status === 'success' && Array.isArray(resultUnactivated.records)) {
-            setUnactivatedCount(resultUnactivated.records.length);
+            const count = resultUnactivated.records.length;
+            setUnactivatedCount(count);
+            localStorage.setItem('vg_unactCount', count.toString());
           }
         }
       } catch (err) {
