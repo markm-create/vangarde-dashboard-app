@@ -75,6 +75,12 @@ export const KPI_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_KPI_SCRIP
 // Initial Campaign Script URL
 export const INITIAL_CAMPAIGN_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_INITIAL_CAMPAIGN_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbwGbv81YQxe56VnPpsFt29YgRkop4r21EZUwr6Fu0whi6BHpaylp2xV7453WvTAs0mT/exec");
 
+// Unactivated Accounts Script URL
+export const UNACTIVATED_ACCOUNTS_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_UNACTIVATED_ACCOUNTS_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbxPBxogaDEawHKb3L-j_Ni6Ur8J30lME1xO8bPgLaG-goAel7ExRJWZiGv8ywRuPu-PRA/exec");
+
+// SMS Campaign Script URL
+export const SMS_CAMPAIGN_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_SMS_CAMPAIGN_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbya9z6sG_e2ibTT9e_ejxT-mA73I3uFmrdahe9U58tatAwpV8Ar_qv1ZrUpX0ZbE3PJ/exec");
+
 export const COLLECTORS: Collector[] = [
   { id: 'c8', name: 'Arianne Sanchez', status: 'online', rank: 10 },
   { id: 'c9', name: 'Charles Phillips', status: 'offline', rank: 11 },

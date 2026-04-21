@@ -13,6 +13,14 @@ import { EXECUTIVE_SCRIPT_URL } from '../constants';
 
 const ExecutiveOverview: React.FC = () => {
   const { executive, fetchExecutive } = useData();
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scroll = (direction: 'up' | 'down') => {
+    if (scrollRef.current) {
+      const scrollAmount = 400;
+      scrollRef.current.scrollBy({ top: direction === 'up' ? -scrollAmount : scrollAmount, behavior: 'smooth' });
+    }
+  };
 
   useEffect(() => {
     fetchExecutive();
@@ -66,6 +74,7 @@ const ExecutiveOverview: React.FC = () => {
   const [hoveredWeekly, setHoveredWeekly] = useState<number | null>(null);
   const [hoveredYearly, setHoveredYearly] = useState<number | null>(null);
   const [hoveredMonthly, setHoveredMonthly] = useState<number | null>(null);
+  const [clientPeriod, setClientPeriod] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
 
   const COLORS = { PRIMARY: "#6366f1", SECONDARY: "#818cf8", MINT: "#34d399", MONTHLY_TREND: "#5c6b9f" };
   const formatFullCurrency = (val: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(val);
@@ -383,7 +392,8 @@ const ExecutiveOverview: React.FC = () => {
   const filterInputClass = "bg-card border border-border-subtle rounded-lg px-2.5 py-1.5 text-[10px] font-black text-text-main uppercase outline-none focus:border-indigo-400 transition-all cursor-pointer shadow-sm hover:bg-surface-100 w-full";
 
   return (
-    <div className="p-8 bg-app h-screen max-h-screen flex flex-col animate-in fade-in duration-500 font-sans overflow-hidden">
+    <div className="relative h-screen bg-app overflow-hidden font-sans">
+      <div ref={scrollRef} className="p-8 h-full flex flex-col animate-in fade-in duration-500 overflow-y-auto scrollbar-none pb-24">
       <div className="mb-8 shrink-0 flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-text-main uppercase tracking-wide">Executive Overview</h1>
@@ -448,18 +458,103 @@ const ExecutiveOverview: React.FC = () => {
         ))}
       </div>
 
-      <div className="flex-1 min-h-0 grid grid-cols-2 grid-rows-2 gap-8 pb-8">
-        <div className="bg-card p-6 rounded-[1.5rem] shadow-sm border border-border-subtle flex flex-col overflow-hidden">
-          <div className="flex justify-between items-center mb-4 shrink-0"><h3 className={headerTitleClass}>Client Performance</h3></div>
+      <div className="grid grid-cols-2 gap-8 pb-8">
+        <div className="bg-card p-6 rounded-[1.5rem] shadow-sm border border-border-subtle flex flex-col overflow-hidden min-h-[520px]">
+          <div className="flex justify-between items-center mb-6 shrink-0">
+            <h3 className={headerTitleClass}>Client Performance</h3>
+            <div className="flex bg-surface-100 p-1 rounded-lg border border-border-subtle">
+              {(['daily', 'weekly', 'monthly'] as const).map((period) => (
+                <button
+                  key={period}
+                  onClick={() => setClientPeriod(period)}
+                  className={`px-3 py-1 text-[10px] font-black uppercase tracking-wider rounded-md transition-all ${
+                    clientPeriod === period
+                      ? 'bg-white dark:bg-zinc-800 text-indigo-600 shadow-sm'
+                      : 'text-text-muted hover:text-text-main'
+                  }`}
+                >
+                  {period}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="flex-1 overflow-auto scrollbar-none">
-            <table className="w-full text-left">
-              <thead><tr className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] border-b border-border-subtle sticky top-0 bg-card z-10"><th className="pb-3"></th><th className="pb-3 text-center">Prior</th><th className="pb-3 text-center">WTD</th><th className="pb-3 text-center">MTD</th><th className="pb-3 text-center">Goal</th><th className="pb-3 text-right">Progress</th></tr></thead>
-              <tbody className="divide-y divide-border-subtle">{clientData.map((client, i) => (<tr key={i} className="group hover:bg-surface-100 transition-colors"><td className="py-4 flex items-center gap-3"><div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: client.color }}></div><span className="text-[12px] font-bold text-text-main font-inter truncate">{client.name}</span></td><td className="py-4 text-center text-[12px] font-bold text-text-muted font-inter">{client.prior}</td><td className="py-4 text-center text-[12px] font-bold text-text-muted font-inter">{client.wtd}</td><td className="py-4 text-center text-[12px] font-bold text-text-muted font-inter">{client.mtd}</td><td className="py-4 text-center text-[12px] font-bold text-text-muted font-inter">{client.targetAmount}</td><td className="py-4 text-right"><div className="flex items-center justify-end gap-3"><span className="text-[9px] font-black text-text-muted">{client.percent}%</span><div className="w-24 h-2.5 bg-surface-100 rounded-full overflow-hidden shrink-0"><div className="h-full rounded-full transition-all duration-1000" style={{ width: `${client.percent}%`, backgroundColor: client.color }}></div></div></div></td></tr>))}</tbody>
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] border-b border-border-subtle sticky top-0 bg-card z-10">
+                  <th className="pb-4 px-3 font-black">Client Name</th>
+                  <th className="pb-4 px-3 text-right">Collected</th>
+                  <th className="pb-4 px-3 text-right">Target</th>
+                  <th className="pb-4 px-3 text-right">Progress</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border-subtle">
+                {clientData.map((client, i) => {
+                  let collected = client.mtd;
+                  let target = client.targetAmount;
+                  let percent = client.percent;
+
+                  // Dynamic calculations based on selected period
+                  const rawTarget = parseFloat(client.targetAmount.replace(/[^0-9.-]+/g, "")) || 0;
+                  
+                  if (clientPeriod === 'daily') {
+                    collected = client.prior;
+                    // Daily target is roughly MTD target / 22 working days
+                    const dailyTargetVal = rawTarget / 22;
+                    target = formatFullCurrency(dailyTargetVal);
+                    const rawCollected = parseFloat(client.prior.replace(/[^0-9.-]+/g, "")) || 0;
+                    percent = dailyTargetVal > 0 ? Math.round((rawCollected / dailyTargetVal) * 100) : 0;
+                  } else if (clientPeriod === 'weekly') {
+                    collected = client.wtd;
+                    // Weekly target is roughly MTD target / 4.3 weeks
+                    const weeklyTargetVal = rawTarget / 4.3;
+                    target = formatFullCurrency(weeklyTargetVal);
+                    const rawCollected = parseFloat(client.wtd.replace(/[^0-9.-]+/g, "")) || 0;
+                    percent = weeklyTargetVal > 0 ? Math.round((rawCollected / weeklyTargetVal) * 100) : 0;
+                  }
+
+                  return (
+                    <tr key={i} className="group hover:bg-surface-100 transition-colors">
+                      <td className="py-4 px-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: client.color }}></div>
+                          <span className="text-[12px] font-bold text-text-main font-inter whitespace-normal leading-relaxed">{client.name}</span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-3 text-right">
+                        <span className="text-[12px] font-bold text-text-muted font-inter">{collected}</span>
+                      </td>
+                      <td className="py-4 px-3 text-right">
+                        <span className="text-[12px] font-bold text-text-muted font-inter">{target}</span>
+                      </td>
+                      <td className="py-4 px-3">
+                        <div className="flex items-center justify-end gap-3">
+                          <span className={`text-[10px] font-black font-mono ${
+                            percent >= 100 ? 'text-emerald-500' : 
+                            percent >= 70 ? 'text-indigo-500' : 
+                            percent >= 30 ? 'text-amber-500' : 'text-rose-500'
+                          }`}>{percent}%</span>
+                          <div className="w-20 h-2 bg-surface-100 rounded-full overflow-hidden shrink-0 border border-border-subtle/30">
+                            <div 
+                              className="h-full rounded-full transition-all duration-1000 shadow-sm" 
+                              style={{ 
+                                width: `${Math.min(100, percent)}%`, 
+                                backgroundColor: client.color,
+                                backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 100%)'
+                              }}
+                            ></div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
             </table>
           </div>
         </div>
 
-        <div className="bg-card p-6 rounded-[1.5rem] shadow-sm border border-border-subtle flex flex-col relative overflow-visible">
+        <div className="bg-card p-6 rounded-[1.5rem] shadow-sm border border-border-subtle flex flex-col relative overflow-visible min-h-[480px]">
           <div className="flex justify-between items-start mb-6 shrink-0"><h3 className={headerTitleClass}>Weekly Cycle</h3>
             <div className="flex items-center gap-4">
               <div className="flex flex-col items-end gap-1.5">
@@ -502,7 +597,7 @@ const ExecutiveOverview: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-card p-6 rounded-[1.5rem] shadow-sm border border-border-subtle flex flex-col relative overflow-visible">
+        <div className="bg-card p-6 rounded-[1.5rem] shadow-sm border border-border-subtle flex flex-col relative overflow-visible min-h-[480px]">
           <div className="flex justify-between items-center mb-6 shrink-0"><h3 className={headerTitleClass}>Monthly Cycle</h3><input type="month" value={monthlyPeriod} onChange={(e) => setMonthlyPeriod(e.target.value)} className="bg-surface-100 border border-border-subtle rounded-lg px-2.5 py-1.5 text-[10px] font-black text-text-muted uppercase outline-none" /></div>
           <div className="relative flex-1 flex gap-4 min-h-0 overflow-visible">
              <div className="flex flex-col justify-between text-[10px] font-bold text-text-muted/40 w-10 text-right pr-2 shrink-0 pb-6">
@@ -518,7 +613,7 @@ const ExecutiveOverview: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-card p-6 rounded-[1.5rem] shadow-sm border border-border-subtle flex flex-col relative overflow-visible">
+        <div className="bg-card p-6 rounded-[1.5rem] shadow-sm border border-border-subtle flex flex-col relative overflow-visible min-h-[480px]">
           <div className="flex justify-between items-center mb-6 shrink-0"><h3 className={headerTitleClass}>Yearly Cycle</h3><div className="flex items-center gap-2.5"><select value={yearlyComp.year1} onChange={(e) => setYearlyComp(p => ({ ...p, year1: e.target.value }))} className="bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800 rounded-lg px-2.5 py-1.5 text-[10px] font-black text-indigo-600 dark:text-indigo-400 outline-none">{["2027","2026","2025","2024","2023","2022"].map(y => <option key={y} value={y}>{y}</option>)}</select><span className="text-[9px] font-black text-text-muted">VS</span><select value={yearlyComp.year2} onChange={(e) => setYearlyComp(p => ({ ...p, year2: e.target.value }))} className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800 rounded-lg px-2.5 py-1.5 text-[10px] font-black text-emerald-600 dark:text-emerald-400 outline-none">{["2027","2026","2025","2024","2023","2022"].map(y => <option key={y} value={y}>{y}</option>)}</select></div></div>
           <div className="relative flex-1 flex gap-4 min-h-0 overflow-visible">
              <div className="flex flex-col justify-between text-[10px] font-bold text-text-muted/40 w-10 text-right pr-2 shrink-0 pb-6">
@@ -535,8 +630,35 @@ const ExecutiveOverview: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Floating Scroll Buttons */}
+      <div className="fixed bottom-8 right-8 flex flex-col gap-3 z-50">
+        <button 
+          onClick={() => scroll('up')}
+          className="p-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-2xl shadow-xl border border-border-subtle text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all transform hover:-translate-y-1 active:scale-95 group"
+          title="Scroll Up"
+        >
+          <div className="animate-bounce-slow font-black">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 15l-6-6-6 6"/>
+            </svg>
+          </div>
+        </button>
+        <button 
+          onClick={() => scroll('down')}
+          className="p-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-2xl shadow-xl border border-border-subtle text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all transform hover:translate-y-1 active:scale-95 group"
+          title="Scroll Down"
+        >
+          <div className="animate-bounce-slow font-black">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 9l6 6 6-6"/>
+            </svg>
+          </div>
+        </button>
+      </div>
     </div>
-  );
+  </div>
+);
 };
 
 export default ExecutiveOverview;

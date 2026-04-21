@@ -12,15 +12,23 @@ import {
   Send
 } from 'lucide-react';
 import InitialCampaignView from './InitialCampaignView';
+import SmsCampaignView from './SmsCampaignView';
 
 interface CampaignDashboardProps {
   onBack?: () => void;
+  initialView?: CampaignView;
 }
 
 type CampaignView = 'menu' | 'initial' | 'sms';
 
-const CampaignDashboard: React.FC<CampaignDashboardProps> = ({ onBack }) => {
-  const [view, setView] = useState<CampaignView>('menu');
+const CampaignDashboard: React.FC<CampaignDashboardProps> = ({ onBack, initialView = 'menu' }) => {
+  const [view, setView] = useState<CampaignView>(initialView);
+
+  // Update view when initialView changes
+  React.useEffect(() => {
+    setView(initialView);
+  }, [initialView]);
+
 
   const campaigns = [
     {
@@ -34,7 +42,7 @@ const CampaignDashboard: React.FC<CampaignDashboardProps> = ({ onBack }) => {
     },
     {
       id: 'sms',
-      title: 'SMS Campaign',
+      title: 'Follow-up SMS',
       subtitle: 'Automated Text Outreach',
       icon: MessageSquare,
       color: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400',
@@ -53,37 +61,9 @@ const CampaignDashboard: React.FC<CampaignDashboardProps> = ({ onBack }) => {
 
   if (view === 'sms') {
     return (
-      <div className="p-8 space-y-8 bg-app h-screen animate-in fade-in duration-500 font-sans overflow-hidden flex flex-col">
-        <div className="flex items-center gap-4 shrink-0">
-          <button 
-            onClick={() => setView('menu')} 
-            className="p-2.5 rounded-2xl bg-card border border-border-subtle text-text-muted hover:text-indigo-600 shadow-sm transition-all group"
-          >
-            <ArrowLeft size={20} className="group-hover:-translate-x-0.5" />
-          </button>
-          <div>
-            <h1 className="text-2xl font-black text-text-main uppercase tracking-tight">SMS Campaign</h1>
-            <p className="text-text-muted font-bold text-[11px] tracking-[0.2em] mt-1 uppercase">Automated Text Outreach</p>
-          </div>
-        </div>
-
-        <div className="flex-1 bg-card rounded-[2rem] border border-border-subtle shadow-sm p-12 flex flex-col items-center justify-center text-center">
-          <div className="w-24 h-24 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center mb-6">
-            <MessageSquare size={48} />
-          </div>
-          <h2 className="text-2xl font-black text-text-main uppercase tracking-tight mb-4">Module Under Construction</h2>
-          <p className="text-text-muted max-w-md mx-auto font-medium">
-            The SMS Campaign management interface is currently being developed. 
-            This will include automated scheduling, template management, and real-time delivery tracking.
-          </p>
-          <button 
-            onClick={() => setView('menu')}
-            className="mt-8 px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold uppercase text-xs tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/20"
-          >
-            Back to Menu
-          </button>
-        </div>
-      </div>
+      <SmsCampaignView 
+        onBack={() => setView('menu')} 
+      />
     );
   }
 

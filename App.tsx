@@ -26,6 +26,7 @@ import MetricAccountBreakdown from './components/MetricAccountBreakdown';
 import CollectorHome from './components/CollectorHome/CollectorHome';
 import NewAssignedAccounts from './components/NewAssignedAccounts';
 import CollectorInventory from './components/CollectorInventory';
+import UnactivatedAccounts from './components/UnactivatedAccounts';
 import Login from './Login';
 import { getDefaultPermissionsForRole, USER_SCRIPT_URL, CONFIG, COLLECTORS } from './constants';
 
@@ -82,6 +83,7 @@ export default function App() {
   const [selectedCollector, setSelectedCollector] = useState<Collector | null>(null);
   const [selectedMetricCategory, setSelectedMetricCategory] = useState<{ id: string; title: string; sheetName: string } | null>(null);
   const [auditInitialView, setAuditInitialView] = useState<any>('overview');
+  const [campaignInitialView, setCampaignInitialView] = useState<any>('menu');
   const [flaggedAgent, setFlaggedAgent] = useState<string | null>(null);
   const [isCollectorListVisible, setIsCollectorListVisible] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -97,7 +99,13 @@ export default function App() {
       const state = event.state;
       if (state) {
         if (state.tab) setActiveTab(state.tab);
-        if (state.auditView) setAuditInitialView(state.auditView);
+        if (state.auditView) {
+          if (state.tab === 'campaign') {
+            setCampaignInitialView(state.auditView);
+          } else {
+            setAuditInitialView(state.auditView);
+          }
+        }
         if (state.agent !== undefined) setFlaggedAgent(state.agent);
       }
     };
@@ -312,6 +320,11 @@ export default function App() {
       setSelectedCollector(null);
       setActiveTab(tab);
       setIsCollectorListVisible(false);
+    } else if (tab === 'campaign') {
+      setCampaignInitialView(subView || 'menu');
+      setSelectedCollector(null);
+      setActiveTab(tab);
+      setIsCollectorListVisible(false);
     } else if (tab === 'individual' || tab === 'individual-audits' || tab === 'collector-breakdown') {
       setActiveTab(tab);
     } else {
@@ -385,7 +398,7 @@ export default function App() {
       case 'inventory':
         return <InventoryDashboard onCollectorBreakdownClick={handleCollectorBreakdownClick} onMetricClick={handleMetricClick} />;
       case 'campaign':
-        return <CampaignDashboard onBack={() => resetToMainTab('home')} />;
+        return <CampaignDashboard initialView={campaignInitialView} onBack={() => resetToMainTab('home')} />;
       case 'collector-inventory':
         return <CollectorInventory currentUser={currentUser} onBack={() => resetToMainTab('home')} />;
       case 'new-imports':
@@ -396,6 +409,8 @@ export default function App() {
         return <CallPerformanceReport onBack={() => resetToMainTab('home')} canExport={currentUser.permissions.manageDocuments} />;
       case 'overdue-payments':
         return <OverduePaymentsReport onBack={() => resetToMainTab('home')} canExport={currentUser.permissions.manageDocuments} />;
+      case 'unactivated-accounts':
+        return <UnactivatedAccounts onBack={() => resetToMainTab('home')} />;
       case 'reports':
         return (
           <div className="p-8 space-y-8 bg-app h-screen animate-in fade-in duration-500 font-sans overflow-hidden flex flex-col">
