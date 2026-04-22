@@ -10,7 +10,8 @@ import {
   CheckCircle2, 
   XCircle,
   Search,
-  Download
+  Download,
+  Filter
 } from 'lucide-react';
 import { INITIAL_CAMPAIGN_SCRIPT_URL } from '../constants';
 
@@ -41,7 +42,10 @@ const InitialCampaignView: React.FC<InitialCampaignViewProps> = ({ onBack }) => 
   const currentDate = new Date();
   const currentMonth = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
   const [monthFilter, setMonthFilter] = useState(currentMonth);
+  const [specificDate, setSpecificDate] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [creditorFilter, setCreditorFilter] = useState('All');
+  const [showFilters, setShowFilters] = useState(false);
 
   const fetchData = async (force = false, silent = false) => {
     if (!silent) setLoading(true);
@@ -92,7 +96,36 @@ const InitialCampaignView: React.FC<InitialCampaignViewProps> = ({ onBack }) => 
     fetchData(false, data.length > 0);
   }, []);
 
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '-';
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return dateStr;
+      
+      return date.toLocaleDateString('en-US', {
+        month: '2-digit',
+        day: '2-digit',
+        year: 'numeric'
+      });
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
   const dateFilteredData = useMemo(() => {
+    if (specificDate) {
+      return data.filter(d => {
+        if (!d.dateSent) return false;
+        try {
+          const date = new Date(d.dateSent);
+          const formatted = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+          return formatted === specificDate;
+        } catch (e) {
+          return false;
+        }
+      });
+    }
+
     if (!monthFilter) return data;
     
     return data.filter(d => {
@@ -111,7 +144,25 @@ const InitialCampaignView: React.FC<InitialCampaignViewProps> = ({ onBack }) => 
         return false;
       }
     });
-  }, [data, monthFilter]);
+  }, [data, monthFilter, specificDate]);
+
+  const uniqueCreditors = useMemo(() => {
+    const creditors = new Set<string>();
+    data.forEach(d => {
+      const name = String(d.creditorName || '').trim();
+      creditors.add(name || 'Unassigned');
+    });
+    return Array.from(creditors).sort();
+  }, [data]);
+
+  const uniqueStatuses = useMemo(() => {
+    const statuses = new Set<string>();
+    data.forEach(d => {
+      const status = String(d.campaignStatus || '').trim();
+      if (status) statuses.add(status);
+    });
+    return Array.from(statuses).sort();
+  }, [data]);
 
   const stats = useMemo(() => {
     const total = dateFilteredData.length;
@@ -141,11 +192,12 @@ const InitialCampaignView: React.FC<InitialCampaignViewProps> = ({ onBack }) => 
                             d.accountNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             d.debtorEmail?.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const matchesStatus = statusFilter === 'All' || d.campaignStatus?.toLowerCase().includes(statusFilter.toLowerCase());
+      const matchesStatus = statusFilter === 'All' || String(d.campaignStatus || '').trim() === statusFilter;
+      const matchesCreditor = creditorFilter === 'All' || (String(d.creditorName || '').trim() || 'Unassigned') === creditorFilter;
       
-      return matchesSearch && matchesStatus;
+      return matchesSearch && matchesStatus && matchesCreditor;
     });
-  }, [dateFilteredData, searchTerm, statusFilter]);
+  }, [dateFilteredData, searchTerm, statusFilter, creditorFilter]);
 
   const handleExport = () => {
     const headers = ['Date Sent', 'Account Number', 'Business Name', 'Creditor Name', 'Account Status', 'Debtor Email', 'Campaign Status', 'Debtor Response'];
@@ -257,26 +309,66 @@ const InitialCampaignView: React.FC<InitialCampaignViewProps> = ({ onBack }) => 
               className="w-full pl-12 pr-4 py-2.5 bg-app border border-border-subtle rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium"
             />
           </div>
-          <div className="flex items-center gap-4">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2.5 bg-app border border-border-subtle rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium text-text-main"
-            >
-              <option value="All">All Statuses</option>
-              <option value="Sent">Sent</option>
-              <option value="Replied">Replied</option>
-              <option value="Bounced">Bounced</option>
-              <option value="Invalid">Invalid</option>
-            </select>
+          <div className="flex items-center gap-4 ml-auto">
             <input
-              type="month"
-              value={monthFilter}
-              onChange={(e) => setMonthFilter(e.target.value)}
-              className="px-4 py-2.5 bg-app border border-border-subtle rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium text-text-main"
+              type="date"
+              value={specificDate}
+              onChange={(e) => setSpecificDate(e.target.value)}
+              className="px-4 py-2 bg-app border border-border-subtle rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium text-text-main h-10 w-40"
             />
-            <div className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-2">
-              Showing {filteredData.length} of {dateFilteredData.length} Records
+
+            <div className="relative">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-full border-2 transition-all font-black text-[10px] uppercase tracking-widest ${
+                  showFilters || statusFilter !== 'All' || creditorFilter !== 'All'
+                    ? 'border-indigo-600 text-indigo-600 bg-indigo-50'
+                    : 'border-indigo-200 text-indigo-400 hover:border-indigo-600 hover:text-indigo-600'
+                }`}
+              >
+                <Filter size={14} className={showFilters ? 'animate-pulse' : ''} />
+                Advanced Filter
+              </button>
+
+              {showFilters && (
+                <div className="absolute right-0 mt-3 w-72 bg-white rounded-2xl shadow-2xl border border-border-subtle z-50 p-6 animate-in fade-in zoom-in-95 duration-200">
+                  <div className="space-y-6">
+                    <div>
+                      <span className="block text-[10px] font-black text-text-muted uppercase tracking-widest mb-3">Status</span>
+                      <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="w-full px-4 py-3 bg-surface-50 border border-border-subtle rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                      >
+                        <option value="All">All Statuses</option>
+                        {uniqueStatuses.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <span className="block text-[10px] font-black text-text-muted uppercase tracking-widest mb-3">Creditor</span>
+                      <select
+                        value={creditorFilter}
+                        onChange={(e) => setCreditorFilter(e.target.value)}
+                        className="w-full px-4 py-3 bg-surface-50 border border-border-subtle rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                      >
+                        <option value="All">All Creditors</option>
+                        {uniqueCreditors.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setStatusFilter('All');
+                        setCreditorFilter('All');
+                        setSpecificDate('');
+                        setShowFilters(false);
+                      }}
+                      className="w-full py-2 text-[10px] font-black text-rose-500 uppercase tracking-widest hover:bg-rose-50 rounded-lg transition-colors border border-rose-100"
+                    >
+                      Reset All Filters
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -332,10 +424,10 @@ const InitialCampaignView: React.FC<InitialCampaignViewProps> = ({ onBack }) => 
                 ) : (
                   filteredData.map((row, idx) => (
                     <tr key={idx} className="hover:bg-surface-50/50 transition-colors group">
-                      <td className="px-6 py-4 text-xs font-bold text-text-main whitespace-nowrap">{row.dateSent}</td>
+                      <td className="px-6 py-4 text-xs font-bold text-text-main whitespace-nowrap">{formatDate(row.dateSent)}</td>
                       <td className="px-6 py-4 text-xs font-mono font-bold text-indigo-600">{row.accountNumber}</td>
                       <td className="px-6 py-4 text-xs font-black text-text-main uppercase tracking-tight">{row.businessName}</td>
-                      <td className="px-6 py-4 text-xs font-bold text-text-muted">{row.creditorName}</td>
+                      <td className="px-6 py-4 text-xs font-bold text-text-muted">{String(row.creditorName || '').trim() || 'Unassigned'}</td>
                       <td className="px-6 py-4">
                         <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest ${
                           row.accountStatus?.toLowerCase().includes('active') ? 'bg-emerald-50 text-emerald-600' :
@@ -367,6 +459,11 @@ const InitialCampaignView: React.FC<InitialCampaignViewProps> = ({ onBack }) => 
               </tbody>
             </table>
           )}
+        </div>
+        <div className="p-4 border-t border-border-subtle bg-surface-50/30 flex justify-end">
+          <div className="text-[10px] font-black text-text-muted uppercase tracking-widest px-4 py-1.5 bg-white border border-border-subtle rounded-lg shadow-sm">
+            Showing {filteredData.length} Records
+          </div>
         </div>
       </div>
     </div>

@@ -101,7 +101,12 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
           }
         }
       } catch (err) {
-        console.error('Failed to fetch campaign stats:', err);
+        const msg = err instanceof Error ? err.message : 'Unknown error';
+        if (msg === 'Failed to fetch') {
+          console.warn('Email Campaign Stats: Connection blocked. Please ensure the Google Script is deployed to "Anyone".');
+        } else {
+          console.error('Email Campaign Stats Error:', msg);
+        }
         setEmailCampaignStats(prev => ({ ...prev, isLoading: false }));
       }
     };
@@ -131,7 +136,12 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
           }
         }
       } catch (err) {
-        console.error('Failed to fetch SMS campaign stats:', err);
+        const msg = err instanceof Error ? err.message : 'Unknown error';
+        if (msg === 'Failed to fetch') {
+          console.warn('SMS Campaign Stats: Connection blocked. Please ensure the Google Script is deployed to "Anyone".');
+        } else {
+          console.error('SMS Campaign Stats Error:', msg);
+        }
         setSmsCampaignStats(prev => ({ ...prev, isLoading: false }));
       }
     };
@@ -264,7 +274,7 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
     if (overduePayments.data && overduePayments.data.length > 0) {
       overduePayments.data.forEach((item: any) => {
         // Filter out N/A, blanks, or invalid account numbers
-        if (item.accountNumber && item.accountNumber !== 'N/A' && item.accountNumber.trim() !== '') {
+        if (item.accountNumber && item.accountNumber !== 'N/A' && String(item.accountNumber).trim() !== '') {
           totalOverdueAmount += Number(item.paymentPlanOverdue || 0);
           overdueCount++;
         }
@@ -383,7 +393,6 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
                             </div>
                             <div>
                                 <h3 className="font-black text-xl text-text-main uppercase tracking-tight">Email Campaigns</h3>
-                                <p className="text-[10px] text-text-muted font-black uppercase tracking-widest">Growth & Engagement</p>
                             </div>
                         </div>
                         <button className="p-2 rounded-xl bg-surface-100 border border-border-subtle text-text-muted hover:text-indigo-500 transition-all">
@@ -440,7 +449,6 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
                             </div>
                             <div>
                                 <h3 className="font-black text-xl text-text-main uppercase tracking-tight">Follow-up SMS</h3>
-                                <p className="text-[10px] text-text-muted font-black uppercase tracking-widest">Instant Reach</p>
                             </div>
                         </div>
                         <button className="p-2 rounded-xl bg-surface-100 border border-border-subtle text-text-muted hover:text-emerald-500 transition-all">
