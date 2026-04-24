@@ -39,7 +39,8 @@ const InitialCampaignView: React.FC<InitialCampaignViewProps> = ({ onBack }) => 
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   
-  const [specificDate, setSpecificDate] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [creditorFilter, setCreditorFilter] = useState('All');
   const [showFilters, setShowFilters] = useState(false);
@@ -117,31 +118,39 @@ const InitialCampaignView: React.FC<InitialCampaignViewProps> = ({ onBack }) => 
   };
 
   const dateFilteredData = useMemo(() => {
-    if (!specificDate) return data;
+    if (!startDate && !endDate) return data;
 
     return data.filter(d => {
       const dateStr = String(d.dateSent || '');
       if (!dateStr || dateStr === '-') return false;
       
+      let itemDateStr = '';
+      
       // Try to parse mm/dd/yyyy format exactly
       const parts = dateStr.split('/');
       if (parts.length === 3) {
         const [month, day, year] = parts;
-        const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-        return formattedDate === specificDate;
+        itemDateStr = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      } else {
+        // Fallback
+        try {
+          const date = new Date(dateStr);
+          if (!isNaN(date.getTime())) {
+            itemDateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+          } else {
+            return false;
+          }
+        } catch (e) {
+          return false;
+        }
       }
+
+      const isAfterStart = !startDate || itemDateStr >= startDate;
+      const isBeforeEnd = !endDate || itemDateStr <= endDate;
       
-      // Fallback
-      try {
-        const date = new Date(dateStr);
-        if (isNaN(date.getTime())) return false;
-        const formatted = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-        return formatted === specificDate;
-      } catch (e) {
-        return false;
-      }
+      return isAfterStart && isBeforeEnd;
     });
-  }, [data, specificDate]);
+  }, [data, startDate, endDate]);
 
   const uniqueCreditors = useMemo(() => {
     const creditors = new Set<string>();
@@ -311,12 +320,21 @@ const InitialCampaignView: React.FC<InitialCampaignViewProps> = ({ onBack }) => 
             />
           </div>
           <div className="flex items-center gap-4 ml-auto">
-            <input
-              type="date"
-              value={specificDate}
-              onChange={(e) => setSpecificDate(e.target.value)}
-              className="px-4 py-2 bg-app border border-border-subtle rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium text-text-main h-10 w-40"
-            />
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="px-4 py-2 bg-app border border-border-subtle rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium text-text-main h-10 w-36"
+              />
+              <span className="text-text-muted font-black text-[10px] uppercase">to</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="px-4 py-2 bg-app border border-border-subtle rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium text-text-main h-10 w-36"
+              />
+            </div>
 
             <div className="relative">
               <button
