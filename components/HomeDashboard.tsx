@@ -89,10 +89,12 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
         if (response.ok) {
           const result = await response.json();
           if (Array.isArray(result)) {
-            const total = result.length;
-            const replied = result.filter(d => d.campaignStatus?.toLowerCase().includes('replied')).length;
+            const validData = result;
+            const total = validData.length;
+            const sent = validData.filter(d => String(d.campaignStatus || '').toLowerCase().includes('sent')).length;
+            const replied = validData.filter(d => String(d.campaignStatus || '').toLowerCase().includes('replied')).length;
             const finalStats = {
-              sent: total,
+              sent: total, // Track total blasts
               responseRate: total > 0 ? ((replied / total) * 100) : 0,
               isLoading: false
             };
@@ -124,8 +126,9 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
         if (responseSms.ok) {
           const resultSms = await responseSms.json();
           if (Array.isArray(resultSms)) {
-            const total = resultSms.length;
-            const replied = resultSms.filter(d => d.campaignStatus?.toLowerCase().includes('replied')).length;
+            const validData = resultSms;
+            const total = validData.length;
+            const replied = validData.filter(d => String(d.campaignStatus || '').toLowerCase().includes('replied')).length;
             const finalStats = {
               sent: total,
               responseRate: total > 0 ? ((replied / total) * 100) : 0,
@@ -407,12 +410,12 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
                                     <Loader2 size={16} className="text-indigo-500 animate-spin" />
                                 </div>
                             )}
-                            <p className="text-[9px] font-black text-text-muted uppercase tracking-widest mb-1">Emails Sent</p>
+                            <p className="text-[9px] font-black text-text-muted uppercase tracking-widest mb-1">Total Campaigns</p>
                             <p className="text-2xl font-black text-text-main font-inter">
                                 {emailCampaignStats.sent.toLocaleString()}
                             </p>
                             <div className="flex items-center gap-1 mt-1">
-                                <span className="text-[9px] font-bold text-text-muted">Total Campaigns Sent</span>
+                                <span className="text-[9px] font-bold text-text-muted">All Recorded Accounts</span>
                             </div>
                         </div>
                         <div className="bg-surface-50 dark:bg-surface-900/10 p-5 rounded-2xl border border-border-subtle/50 relative">
@@ -463,12 +466,12 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
                                     <Loader2 size={16} className="text-emerald-500 animate-spin" />
                                 </div>
                             )}
-                            <p className="text-[9px] font-black text-text-muted uppercase tracking-widest mb-1">SMS Sent</p>
+                            <p className="text-[9px] font-black text-text-muted uppercase tracking-widest mb-1">Total Campaigns</p>
                             <p className="text-2xl font-black text-text-main font-inter">
                                 {smsCampaignStats.sent.toLocaleString()}
                             </p>
                             <div className="flex items-center gap-1 mt-1">
-                                <span className="text-[9px] font-bold text-text-muted">Total Campaigns Sent</span>
+                                <span className="text-[9px] font-bold text-text-muted">All Recorded Accounts</span>
                             </div>
                         </div>
                         <div className="bg-surface-50 dark:bg-surface-900/10 p-5 rounded-2xl border border-border-subtle/50 relative">

@@ -488,11 +488,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         error: null,
       });
     } catch (error) {
-      console.error('Error fetching home data:', error);
+      const errMsg = (error as Error).message || 'Failed to sync data';
+      if (!errMsg.includes('Connection Blocked')) {
+         console.error('Error fetching home data:', error);
+      }
       setHome(prev => ({ 
         ...prev, 
         isLoading: false, 
-        error: (error as Error).message || 'Failed to sync data' 
+        error: errMsg 
       }));
     }
   }, [home.lastFetched]);
@@ -850,7 +853,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await fetch(`${SCRIPT_URL}?action=getAccountClosureAudit`);
       if (!response.ok) throw new Error(`Server responded with status ${response.status}`);
       
-      const result = await response.json();
+      const responseText = await response.text();
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (e) {
+        throw new Error(`Invalid JSON response: The connection may be blocked or URL is incorrect.`);
+      }
       if (result.status === 'error') throw new Error(result.message);
 
       // Filter out header rows
@@ -872,8 +881,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         error: null,
       });
     } catch (error) {
-      console.error('Error fetching account closure audit:', error);
-      setAccountClosureAudit(prev => ({ ...prev, isLoading: false, error: (error as Error).message }));
+      const errMsg = (error as Error).message || 'Failed to sync data';
+      if (errMsg === 'Failed to fetch') {
+         console.warn('Account Closure Audit: Connection Blocked. Please check Google Script deployment permissions.');
+      } else if (!errMsg.includes('Invalid JSON response')) {
+         console.error('Error fetching account closure audit:', error);
+      }
+      setAccountClosureAudit(prev => ({ ...prev, isLoading: false, error: errMsg }));
     }
   }, [accountClosureAudit.lastFetched]);
 

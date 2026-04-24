@@ -100,10 +100,23 @@ export const sheetService = {
       });
       
       if (!response.ok) throw new Error(`Sync Error: ${response.status}`);
-      const result = await response.json();
+      
+      const responseText = await response.text();
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (e) {
+        throw new Error(`Invalid JSON response. The connection may be blocked or the URL may be incorrect.`);
+      }
+      
       return result.status === 'success' ? { data: result.data, lastUpdated: Date.now() } : { data: [], lastUpdated: null };
     } catch (error) {
-      console.error('Error fetching account closure audit:', error);
+      const msg = error instanceof Error ? error.message : String(error);
+      if (msg === 'Failed to fetch') {
+         console.warn('Account Closure Audit: Connection Blocked. Make sure it is deployed to "Anyone".');
+      } else if (!msg.includes('Invalid JSON')) {
+         console.error('Error fetching account closure audit:', error);
+      }
       return { data: [], lastUpdated: null };
     }
   },
@@ -565,11 +578,12 @@ export const sheetService = {
       
       return result.homeData;
     } catch (error) {
-      console.error('Error in getHomeData:', error);
       const message = error instanceof Error ? error.message : String(error);
-      
       if (message === 'Failed to fetch') {
+        console.warn('Home Dashboard Data: Connection Blocked. Please check if the Google Script is deployed to "Anyone".');
         throw new Error('Connection Blocked. Please check if the Google Script is deployed to "Anyone" and you are not logged into multiple Google accounts.');
+      } else {
+        console.error('Error in getHomeData:', error);
       }
       throw error;
     }

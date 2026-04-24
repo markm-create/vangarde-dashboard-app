@@ -39,9 +39,6 @@ const InitialCampaignView: React.FC<InitialCampaignViewProps> = ({ onBack }) => 
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   
-  const currentDate = new Date();
-  const currentMonth = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
-  const [monthFilter, setMonthFilter] = useState(currentMonth);
   const [specificDate, setSpecificDate] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [creditorFilter, setCreditorFilter] = useState('All');
@@ -79,13 +76,20 @@ const InitialCampaignView: React.FC<InitialCampaignViewProps> = ({ onBack }) => 
         throw new Error('Sync Error: Data format mismatch (Expected Array)');
       }
     } catch (err) {
-      console.error('Sync Error:', err);
+      const message = err instanceof Error ? err.message : 'Failed to fetch campaign data';
+      if (message.includes('SHEET_URL is not defined')) {
+        console.warn('Initial Campaign: The Google Script is missing the required SHEET_URL variable. Please configure it in the script.');
+      } else if (message === 'Failed to fetch') {
+        console.warn('Initial Campaign: Connection Blocked. Please ensure the Google Script is deployed to "Anyone".');
+      } else {
+        console.error('Initial Campaign Sync Error:', err);
+      }
+      
       // Only set error if we don't have cached data to show
       if (data.length === 0) {
-        const message = err instanceof Error ? err.message : 'Failed to fetch campaign data';
         setError(message === 'Failed to fetch' 
           ? 'Connection Blocked. Please ensure the Google Script is deployed to "Anyone".' 
-          : message);
+          : message.includes('SHEET_URL') ? 'Backend Error: Please check the Google Script setup for missing SHEET_URL.' : message);
       }
     } finally {
       if (!silent) setLoading(false);
@@ -113,38 +117,31 @@ const InitialCampaignView: React.FC<InitialCampaignViewProps> = ({ onBack }) => 
   };
 
   const dateFilteredData = useMemo(() => {
-    if (specificDate) {
-      return data.filter(d => {
-        if (!d.dateSent) return false;
-        try {
-          const date = new Date(d.dateSent);
-          const formatted = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-          return formatted === specificDate;
-        } catch (e) {
-          return false;
-        }
-      });
-    }
+    if (!specificDate) return data;
 
-    if (!monthFilter) return data;
-    
     return data.filter(d => {
-      if (!d.dateSent) return false;
-      const parts = d.dateSent.split('/');
+      const dateStr = String(d.dateSent || '');
+      if (!dateStr || dateStr === '-') return false;
+      
+      // Try to parse mm/dd/yyyy format exactly
+      const parts = dateStr.split('/');
       if (parts.length === 3) {
         const [month, day, year] = parts;
-        const formattedDate = `${year}-${month.padStart(2, '0')}`;
-        return formattedDate === monthFilter;
+        const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        return formattedDate === specificDate;
       }
+      
+      // Fallback
       try {
-        const date = new Date(d.dateSent);
-        const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        return formattedDate === monthFilter;
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return false;
+        const formatted = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        return formatted === specificDate;
       } catch (e) {
         return false;
       }
     });
-  }, [data, monthFilter, specificDate]);
+  }, [data, specificDate]);
 
   const uniqueCreditors = useMemo(() => {
     const creditors = new Set<string>();
@@ -168,10 +165,10 @@ const InitialCampaignView: React.FC<InitialCampaignViewProps> = ({ onBack }) => 
     const total = dateFilteredData.length;
     if (total === 0) return { total: 0, sent: 0, replied: 0, bounced: 0, invalid: 0, sentCount: 0, repliedCount: 0, bouncedCount: 0, invalidCount: 0 };
 
-    const sent = dateFilteredData.filter(d => d.campaignStatus?.toLowerCase().includes('sent')).length;
-    const replied = dateFilteredData.filter(d => d.campaignStatus?.toLowerCase().includes('replied')).length;
-    const bounced = dateFilteredData.filter(d => d.campaignStatus?.toLowerCase().includes('bounced')).length;
-    const invalid = dateFilteredData.filter(d => d.campaignStatus?.toLowerCase().includes('invalid')).length;
+    const sent = dateFilteredData.filter(d => String(d.campaignStatus || '').toLowerCase().includes('sent')).length;
+    const replied = dateFilteredData.filter(d => String(d.campaignStatus || '').toLowerCase().includes('replied')).length;
+    const bounced = dateFilteredData.filter(d => String(d.campaignStatus || '').toLowerCase().includes('bounced')).length;
+    const invalid = dateFilteredData.filter(d => String(d.campaignStatus || '').toLowerCase().includes('invalid')).length;
 
     return {
       total,
@@ -188,9 +185,13 @@ const InitialCampaignView: React.FC<InitialCampaignViewProps> = ({ onBack }) => 
 
   const filteredData = useMemo(() => {
     return dateFilteredData.filter(d => {
-      const matchesSearch = d.businessName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            d.accountNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            d.debtorEmail?.toLowerCase().includes(searchTerm.toLowerCase());
+      const bizName = String(d.businessName || '').toLowerCase();
+      const acctNum = String(d.accountNumber || '').toLowerCase();
+      const email = String(d.debtorEmail || '').toLowerCase();
+      
+      const matchesSearch = bizName.includes(searchTerm.toLowerCase()) ||
+                            acctNum.includes(searchTerm.toLowerCase()) ||
+                            email.includes(searchTerm.toLowerCase());
       
       const matchesStatus = statusFilter === 'All' || String(d.campaignStatus || '').trim() === statusFilter;
       const matchesCreditor = creditorFilter === 'All' || (String(d.creditorName || '').trim() || 'Unassigned') === creditorFilter;
@@ -430,8 +431,8 @@ const InitialCampaignView: React.FC<InitialCampaignViewProps> = ({ onBack }) => 
                       <td className="px-6 py-4 text-xs font-bold text-text-muted">{String(row.creditorName || '').trim() || 'Unassigned'}</td>
                       <td className="px-6 py-4">
                         <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest ${
-                          row.accountStatus?.toLowerCase().includes('active') ? 'bg-emerald-50 text-emerald-600' :
-                          row.accountStatus?.toLowerCase().includes('closed') ? 'bg-rose-50 text-rose-600' :
+                          String(row.accountStatus || '').toLowerCase().includes('active') ? 'bg-emerald-50 text-emerald-600' :
+                          String(row.accountStatus || '').toLowerCase().includes('closed') ? 'bg-rose-50 text-rose-600' :
                           'bg-surface-100 text-text-muted'
                         }`}>
                           {row.accountStatus}
@@ -440,10 +441,10 @@ const InitialCampaignView: React.FC<InitialCampaignViewProps> = ({ onBack }) => 
                       <td className="px-6 py-4 text-xs font-medium text-text-muted">{row.debtorEmail}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          {row.campaignStatus?.toLowerCase().includes('sent') ? <Send size={14} className="text-blue-500" /> :
-                           row.campaignStatus?.toLowerCase().includes('replied') ? <MessageSquare size={14} className="text-emerald-500" /> :
-                           row.campaignStatus?.toLowerCase().includes('bounced') ? <XCircle size={14} className="text-orange-500" /> :
-                           row.campaignStatus?.toLowerCase().includes('invalid') ? <AlertCircle size={14} className="text-rose-500" /> :
+                          {String(row.campaignStatus || '').toLowerCase().includes('sent') ? <Send size={14} className="text-blue-500" /> :
+                           String(row.campaignStatus || '').toLowerCase().includes('replied') ? <MessageSquare size={14} className="text-emerald-500" /> :
+                           String(row.campaignStatus || '').toLowerCase().includes('bounced') ? <XCircle size={14} className="text-orange-500" /> :
+                           String(row.campaignStatus || '').toLowerCase().includes('invalid') ? <AlertCircle size={14} className="text-rose-500" /> :
                            <AlertCircle size={14} className="text-text-muted" />}
                           <span className="text-xs font-bold text-text-main">{row.campaignStatus}</span>
                         </div>

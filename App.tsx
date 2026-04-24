@@ -144,7 +144,12 @@ export default function App() {
             window.dispatchEvent(new Event('vg_user_update'));
           }
         } catch (error) {
-          console.error("Failed to sync users from cloud", error);
+          const msg = error instanceof Error ? error.message : String(error);
+          if (msg === 'Failed to fetch') {
+            console.warn("User Sync: Connection Blocked. Please check Google Script deployment permissions.");
+          } else {
+            console.error("Failed to sync users from cloud:", error);
+          }
           // Simple retry logic for network blips
           if (retryCount < 2) {
             setTimeout(() => syncUsers(retryCount + 1), 2000);

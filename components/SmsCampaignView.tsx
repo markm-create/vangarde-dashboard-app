@@ -41,9 +41,6 @@ const SmsCampaignView: React.FC<SmsCampaignViewProps> = ({ onBack }) => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   
-  const currentDate = new Date();
-  const currentMonth = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
-  const [monthFilter, setMonthFilter] = useState(currentMonth);
   const [specificDate, setSpecificDate] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [creditorFilter, setCreditorFilter] = useState('All');
@@ -81,12 +78,19 @@ const SmsCampaignView: React.FC<SmsCampaignViewProps> = ({ onBack }) => {
         throw new Error('Sync Error: Data format mismatch (Expected Array)');
       }
     } catch (err) {
-      console.error('Sync Error:', err);
+      const message = err instanceof Error ? err.message : 'Failed to fetch SMS campaign data';
+      if (message.includes('SHEET_URL is not defined')) {
+        console.warn('SMS Campaign: The Google Script is missing the required SHEET_URL variable. Please configure it in the script.');
+      } else if (message === 'Failed to fetch') {
+        console.warn('SMS Campaign: Connection Blocked. Please ensure the Google Script is deployed to "Anyone".');
+      } else {
+        console.error('SMS Campaign Sync Error:', err);
+      }
+      
       if (data.length === 0) {
-        const message = err instanceof Error ? err.message : 'Failed to fetch SMS campaign data';
         setError(message === 'Failed to fetch' 
           ? 'Connection Blocked. Please ensure the Google Script is deployed to "Anyone".' 
-          : message);
+          : message.includes('SHEET_URL') ? 'Backend Error: Please check the Google Script setup for missing SHEET_URL.' : message);
       }
     } finally {
       if (!silent) setLoading(false);
@@ -115,38 +119,30 @@ const SmsCampaignView: React.FC<SmsCampaignViewProps> = ({ onBack }) => {
   };
 
   const dateFilteredData = useMemo(() => {
-    if (specificDate) {
-      return data.filter(d => {
-        if (!d.dateSent) return false;
-        try {
-          const date = new Date(d.dateSent);
-          const formatted = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-          return formatted === specificDate;
-        } catch (e) {
-          return false;
-        }
-      });
-    }
+    if (!specificDate) return data;
 
-    if (!monthFilter) return data;
-    
     return data.filter(d => {
-      if (!d.dateSent) return false;
+      if (!d.dateSent || d.dateSent === '-') return false;
+      
+      // Try to parse mm/dd/yyyy format exactly
       const parts = d.dateSent.split('/');
       if (parts.length === 3) {
         const [month, day, year] = parts;
-        const formattedDate = `${year}-${month.padStart(2, '0')}`;
-        return formattedDate === monthFilter;
+        const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        return formattedDate === specificDate;
       }
+      
+      // Fallback
       try {
         const date = new Date(d.dateSent);
-        const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        return formattedDate === monthFilter;
+        if (isNaN(date.getTime())) return false;
+        const formatted = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        return formatted === specificDate;
       } catch (e) {
         return false;
       }
     });
-  }, [data, monthFilter, specificDate]);
+  }, [data, specificDate]);
 
   const uniqueCreditors = useMemo(() => {
     const creditors = new Set<string>();
@@ -170,9 +166,9 @@ const SmsCampaignView: React.FC<SmsCampaignViewProps> = ({ onBack }) => {
     const total = dateFilteredData.length;
     if (total === 0) return { total: 0, sent: 0, replied: 0, failed: 0, sentCount: 0, repliedCount: 0, failedCount: 0 };
 
-    const sent = dateFilteredData.filter(d => d.campaignStatus?.toLowerCase().includes('sent') || d.campaignStatus?.toLowerCase().includes('delivered')).length;
-    const replied = dateFilteredData.filter(d => d.campaignStatus?.toLowerCase().includes('replied')).length;
-    const failed = dateFilteredData.filter(d => d.campaignStatus?.toLowerCase().includes('failed') || d.campaignStatus?.toLowerCase().includes('bounced') || d.campaignStatus?.toLowerCase().includes('invalid')).length;
+    const sent = dateFilteredData.filter(d => String(d.campaignStatus || '').toLowerCase().includes('sent') || String(d.campaignStatus || '').toLowerCase().includes('delivered')).length;
+    const replied = dateFilteredData.filter(d => String(d.campaignStatus || '').toLowerCase().includes('replied')).length;
+    const failed = dateFilteredData.filter(d => String(d.campaignStatus || '').toLowerCase().includes('failed') || String(d.campaignStatus || '').toLowerCase().includes('bounced') || String(d.campaignStatus || '').toLowerCase().includes('invalid')).length;
 
     return {
       total,
@@ -188,9 +184,12 @@ const SmsCampaignView: React.FC<SmsCampaignViewProps> = ({ onBack }) => {
   const filteredData = useMemo(() => {
     return dateFilteredData.filter(d => {
       const searchTarget = `${d.debtorName || ''} ${d.debtorSurname || ''}`.toLowerCase();
+      const acctNum = String(d.accountNumber || '').toLowerCase();
+      const phone = String(d.phoneNumber || '').toLowerCase();
+      
       const matchesSearch = searchTarget.includes(searchTerm.toLowerCase()) ||
-                            d.accountNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            d.phoneNumber?.toLowerCase().includes(searchTerm.toLowerCase());
+                            acctNum.includes(searchTerm.toLowerCase()) ||
+                            phone.includes(searchTerm.toLowerCase());
       
       const matchesStatus = statusFilter === 'All' || d.campaignStatus === statusFilter;
       const creditorName = String(d.creditorName || '').trim() || 'Unassigned';
@@ -424,9 +423,9 @@ const SmsCampaignView: React.FC<SmsCampaignViewProps> = ({ onBack }) => {
                       <td className="px-6 py-4 text-xs font-medium text-text-muted">{row.phoneNumber}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          {row.campaignStatus?.toLowerCase().includes('sent') || row.campaignStatus?.toLowerCase().includes('delivered') ? <CheckCircle2 size={14} className="text-blue-500" /> :
-                           row.campaignStatus?.toLowerCase().includes('replied') ? <MessageSquare size={14} className="text-emerald-500" /> :
-                           row.campaignStatus?.toLowerCase().includes('failed') || row.campaignStatus?.toLowerCase().includes('bounced') || row.campaignStatus?.toLowerCase().includes('invalid') ? <XCircle size={14} className="text-rose-500" /> :
+                          {String(row.campaignStatus || '').toLowerCase().includes('sent') || String(row.campaignStatus || '').toLowerCase().includes('delivered') ? <CheckCircle2 size={14} className="text-blue-500" /> :
+                           String(row.campaignStatus || '').toLowerCase().includes('replied') ? <MessageSquare size={14} className="text-emerald-500" /> :
+                           String(row.campaignStatus || '').toLowerCase().includes('failed') || String(row.campaignStatus || '').toLowerCase().includes('bounced') || String(row.campaignStatus || '').toLowerCase().includes('invalid') ? <XCircle size={14} className="text-rose-500" /> :
                            <AlertCircle size={14} className="text-text-muted" />}
                           <span className="text-xs font-bold text-text-main">{row.campaignStatus}</span>
                         </div>
