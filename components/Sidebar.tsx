@@ -213,6 +213,17 @@ const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => onResetToMainTab('home')} 
           />
 
+          {/* Revenue */}
+          {permissions.viewRevenue && (
+            <NavItem 
+              icon={CircleDollarSign} 
+              label="Revenue" 
+              isActive={activeTab === 'revenue'} 
+              isCollapsed={isCollapsed}
+              onClick={() => onResetToMainTab('revenue')} 
+            />
+          )}
+
           {/* 2. Executive */}
           {permissions.viewExecutive && (
             <NavItem 

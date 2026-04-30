@@ -97,6 +97,7 @@ export const COLLECTORS: Collector[] = [
 ];
 
 export const DEFAULT_PERMISSIONS: AppPermissions = {
+  viewRevenue: false,
   viewExecutive: false,
   viewKPI: false,
   viewPostdates: false,
@@ -138,6 +139,7 @@ export const getDefaultPermissionsForRole = (role: AppUser['role'], email: strin
   // Special Case: Developer (Mark Mojica)
   if (role === 'Developer' || email.toLowerCase() === 'mark.mojica@vangardegroup.com') {
     return {
+      viewRevenue: true,
       viewExecutive: true,
       viewKPI: true,
       viewPostdates: true,
@@ -170,6 +172,7 @@ export const getDefaultPermissionsForRole = (role: AppUser['role'], email: strin
   // Open access to the entire dashboard except the Identity & access tab in the settings page
   if (role === 'Administrator' || role === 'Manager' || role === 'CEO') {
     return {
+      viewRevenue: true,
       viewExecutive: true,
       viewKPI: true,
       viewPostdates: true,

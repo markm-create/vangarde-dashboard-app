@@ -398,7 +398,7 @@ const PostdatesView: React.FC<{ canManageDocuments: boolean, currentUser: AppUse
         )}
       </div>
       <div className="shrink-0 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-6">
           {MAIN_CARDS.map((m, i) => {
             const bgColors: any = { emerald: "#10b981", rose: "#f43f5e", blue: "#3b82f6", purple: "#a855f7", teal: "#14b8a6" };
             const blobColors: any = { emerald: "#059669", rose: "#e11d48", blue: "#2563eb", purple: "#9333ea", teal: "#0d9488" };
@@ -437,7 +437,7 @@ const PostdatesView: React.FC<{ canManageDocuments: boolean, currentUser: AppUse
           })}
         </div>
         {!isCollector && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 mt-8">
             {SECONDARY_CARDS.map((m, i) => (
               <div key={i} className="bg-card p-5 rounded-xl border border-border-subtle shadow-sm flex flex-col justify-center h-28 relative overflow-hidden group transition-all hover:border-indigo-400/30">
                  <div className="relative z-10"><p className="text-[10px] font-bold text-text-muted mb-4 uppercase tracking-widest truncate">{m.l}</p><h3 className="text-3xl font-black font-inter tracking-tight leading-none mb-1" style={{ color: m.c === '#1e293b' ? 'var(--text-main)' : m.c }}>{m.v}</h3></div>

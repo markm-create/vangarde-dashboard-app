@@ -17,6 +17,7 @@ import CampaignDashboard from './components/CampaignDashboard';
 import RPCLogsDashboard from './components/RPCLogsDashboard';
 import UserSettings from './components/UserSettings';
 import MonthlyCollectionsHistory from './components/MonthlyCollectionsHistory';
+import CompanyRevenue from './components/CompanyRevenue';
 import NewImportsReport from './components/NewImportsReport';
 import CallPerformanceReport from './components/CallPerformanceReport';
 import OverduePaymentsReport from './components/OverduePaymentsReport';
@@ -354,6 +355,8 @@ export default function App() {
           return <CollectorHome currentUser={currentUser} onNavigate={resetToMainTab} />;
         }
         return <HomeDashboard onNavigate={resetToMainTab} currentUser={currentUser} />;
+      case 'revenue':
+        return <CompanyRevenue />;
       case 'executive':
         return <ExecutiveOverview />;
       case 'kpi':

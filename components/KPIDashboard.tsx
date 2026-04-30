@@ -349,7 +349,7 @@ const KPIDashboard: React.FC = () => {
       </div>
 
       {activeTab === 'collection' && (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <SummaryCard label="Daily Collected" value={formatCurrency(collectionSummary.daily)} icon={DollarSign} colorClass="bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400" />
           <SummaryCard label="Weekly Collected" value={formatCurrency(collectionSummary.weekly)} icon={DollarSign} colorClass="bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" />
           <SummaryCard label="Monthly Collected" value={formatCurrency(collectionSummary.monthly)} icon={DollarSign} colorClass="bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400" />
@@ -359,7 +359,7 @@ const KPIDashboard: React.FC = () => {
       )}
 
       {activeTab === 'performance' && (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <SummaryCard label="Accounts Worked" value={formatNumber(performanceSummary.worked)} icon={Target} colorClass="bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" />
           <SummaryCard label="Outbound Calls" value={formatNumber(performanceSummary.outbound)} icon={TrendingUp} colorClass="bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400" />
           <SummaryCard label="Inbound Calls" value={formatNumber(performanceSummary.inbound)} icon={TrendingDown} colorClass="bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400" />
@@ -369,7 +369,7 @@ const KPIDashboard: React.FC = () => {
       )}
 
       {activeTab === 'postdates' && (
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <SummaryCard label="Succeeded" value={formatCurrency(postdatesSummary.succeeded)} icon={DollarSign} colorClass="bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400" />
           <SummaryCard label="Declined" value={formatCurrency(postdatesSummary.declined)} icon={TrendingDown} colorClass="bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400" />
           <SummaryCard label="Recovered" value={formatCurrency(postdatesSummary.recovered)} icon={TrendingUp} colorClass="bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" />

@@ -1289,7 +1289,7 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
       }
       if (viewType === 'onboarding') {
           return (
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 shrink-0">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 shrink-0">
                 <div className="bg-card p-5 rounded-2xl border border-border-subtle shadow-sm flex items-center justify-between transition-all hover:shadow-md"><div><p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-1">Total</p><p className="text-3xl font-black text-text-main">{stats.total}</p></div><FileSearch size={24} className="text-text-muted opacity-30" /></div>
                 <div className="bg-card p-5 rounded-2xl border border-border-subtle shadow-sm flex items-center justify-between transition-all hover:shadow-md"><div><p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-1">Passed</p><p className="text-3xl font-black text-emerald-500">{stats.passed}</p></div><CheckCircle2 size={24} className="text-emerald-500 opacity-30" /></div>
                 <div className="bg-card p-5 rounded-2xl border border-border-subtle shadow-sm flex items-center justify-between transition-all hover:shadow-md"><div><p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-1">Failed</p><p className="text-3xl font-black text-rose-500">{stats.failed}</p></div><AlertTriangle size={24} className="text-rose-500 opacity-30" /></div>

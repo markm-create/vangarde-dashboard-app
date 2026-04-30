@@ -450,7 +450,7 @@ const IndividualAuditLogs: React.FC<{
               </div>
             </div>
           )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
             <ScoreCard week="W1" range="Week 1 Score" score={auditScoring.data?.accountAudit?.week1 || 0} color="indigo" />
             <ScoreCard week="W2" range="Week 2 Score" score={auditScoring.data?.accountAudit?.week2 || 0} color="indigo" />
             <ScoreCard week="W3" range="Week 3 Score" score={auditScoring.data?.accountAudit?.week3 || 0} color="indigo" />
@@ -480,7 +480,7 @@ const IndividualAuditLogs: React.FC<{
               </div>
             </div>
           )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
             <ScoreCard week="W1" range="Week 1 Score" score={auditScoring.data?.callAudit?.week1 || 0} color="emerald" />
             <ScoreCard week="W2" range="Week 2 Score" score={auditScoring.data?.callAudit?.week2 || 0} color="emerald" />
             <ScoreCard week="W3" range="Week 3 Score" score={auditScoring.data?.callAudit?.week3 || 0} color="emerald" />

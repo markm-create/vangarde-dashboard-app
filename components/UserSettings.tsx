@@ -745,6 +745,7 @@ const UserSettings: React.FC<UserSettingsProps> = ({ isDarkMode, onToggleDarkMod
                               <h4 className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Dashboard Visibility</h4>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <ToggleItem label="Revenue" desc="Company Revenue" active={effectivePermissions.viewRevenue} onToggle={() => handlePermissionToggle('viewRevenue')} />
                                 <ToggleItem label="Executive" desc="Revenue Targets" active={effectivePermissions.viewExecutive} onToggle={() => handlePermissionToggle('viewExecutive')} />
                                 <ToggleItem label="KPI" desc="Key Performance Indicators" active={effectivePermissions.viewKPI} onToggle={() => handlePermissionToggle('viewKPI')} />
                                 <ToggleItem label="Postdates" desc="Payment Tables" active={effectivePermissions.viewPostdates} onToggle={() => handlePermissionToggle('viewPostdates')} />

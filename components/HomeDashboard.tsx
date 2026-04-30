@@ -88,11 +88,16 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
         });
         if (response.ok) {
           const result = await response.json();
+          let validData = null;
           if (Array.isArray(result)) {
-            const validData = result;
+             validData = result;
+          } else if (result && Array.isArray(result.data)) {
+             validData = result.data;
+          }
+          if (validData) {
             const total = validData.length;
-            const sent = validData.filter(d => String(d.campaignStatus || '').toLowerCase().includes('sent')).length;
-            const replied = validData.filter(d => String(d.campaignStatus || '').toLowerCase().includes('replied')).length;
+            const sent = validData.filter((d: any) => String(d.campaignStatus || '').toLowerCase().includes('sent')).length;
+            const replied = validData.filter((d: any) => String(d.campaignStatus || '').toLowerCase().includes('replied')).length;
             const finalStats = {
               sent: total, // Track total blasts
               responseRate: total > 0 ? ((replied / total) * 100) : 0,
@@ -125,10 +130,15 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
         });
         if (responseSms.ok) {
           const resultSms = await responseSms.json();
+          let validData = null;
           if (Array.isArray(resultSms)) {
-            const validData = resultSms;
+             validData = resultSms;
+          } else if (resultSms && Array.isArray(resultSms.data)) {
+             validData = resultSms.data;
+          }
+          if (validData) {
             const total = validData.length;
-            const replied = validData.filter(d => String(d.campaignStatus || '').toLowerCase().includes('replied')).length;
+            const replied = validData.filter((d: any) => String(d.campaignStatus || '').toLowerCase().includes('replied')).length;
             const finalStats = {
               sent: total,
               responseRate: total > 0 ? ((replied / total) * 100) : 0,

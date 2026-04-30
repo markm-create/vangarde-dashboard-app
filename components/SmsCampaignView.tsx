@@ -71,12 +71,19 @@ const SmsCampaignView: React.FC<SmsCampaignViewProps> = ({ onBack }) => {
         throw new Error(`Database Error: ${result.error}`);
       }
 
+      let dataArray = null;
       if (Array.isArray(result)) {
-        setData(result);
-        localStorage.setItem('vg_smsCampaignData', JSON.stringify(result));
+        dataArray = result;
+      } else if (result && Array.isArray(result.data)) {
+        dataArray = result.data;
+      }
+
+      if (dataArray) {
+        setData(dataArray);
+        localStorage.setItem('vg_smsCampaignData', JSON.stringify(dataArray));
       } else {
         console.error('Unexpected data format:', result);
-        throw new Error('Sync Error: Data format mismatch (Expected Array)');
+        throw new Error('Sync Error: Data format mismatch (Expected Array or {data: Array})');
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch SMS campaign data';
@@ -371,7 +378,8 @@ const SmsCampaignView: React.FC<SmsCampaignViewProps> = ({ onBack }) => {
                       onClick={() => {
                         setStatusFilter('All');
                         setCreditorFilter('All');
-                        setSpecificDate('');
+                        setStartDate('');
+                        setEndDate('');
                         setShowFilters(false);
                       }}
                       className="w-full py-2 text-[10px] font-black text-rose-500 uppercase tracking-widest hover:bg-rose-50 rounded-lg transition-colors border border-rose-100"
