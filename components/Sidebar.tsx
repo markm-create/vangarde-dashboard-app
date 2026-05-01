@@ -2,6 +2,7 @@ import React from 'react';
 import { 
   LayoutDashboard, 
   CircleDollarSign, 
+  Landmark,
   Users, 
   ChevronRight,
   ClipboardList,
@@ -216,7 +217,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           {/* Revenue */}
           {permissions.viewRevenue && (
             <NavItem 
-              icon={CircleDollarSign} 
+              icon={Landmark} 
               label="Revenue" 
               isActive={activeTab === 'revenue'} 
               isCollapsed={isCollapsed}

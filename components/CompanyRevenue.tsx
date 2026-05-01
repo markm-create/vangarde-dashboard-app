@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, CircleDollarSign } from 'lucide-react';
+import { ArrowLeft, Landmark } from 'lucide-react';
 import {
   BarChart,
   Bar,
@@ -125,7 +125,7 @@ export default function CompanyRevenue({ onBack }: CompanyRevenueProps) {
         )}
         <div className="flex items-center gap-3">
           <div className="bg-emerald-500/10 p-2.5 rounded-xl border border-emerald-500/20">
-            <CircleDollarSign className="text-emerald-500" size={24} />
+            <Landmark className="text-emerald-500" size={24} />
           </div>
           <div>
             <h1 className="text-2xl font-black text-text-main uppercase tracking-tight">Company Revenue</h1>

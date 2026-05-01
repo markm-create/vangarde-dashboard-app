@@ -379,6 +379,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const date = p.dateTime ? new Date(p.dateTime) : new Date();
         return {
           ...p,
+          amount: Number(p.amount) || 0,
           rawDate: isNaN(date.getTime()) ? new Date() : date,
           dateTime: isNaN(date.getTime()) 
             ? 'Invalid Date' 
@@ -387,8 +388,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
 
       setPostdates({
-        scheduled: (data.scheduled || []).map(mapPayment),
-        processed: (data.processed || []).map(mapPayment),
+        scheduled: (data.scheduled || []).filter((p: any) => p.owner || p.accountId || p.amount).map(mapPayment),
+        processed: (data.processed || []).filter((p: any) => p.owner || p.accountId || p.amount).map(mapPayment),
         totalRecovered: data.totalRecovered || 0,
         weeklyStart: data.weeklyStart || 0,
         monthlyStart: data.monthlyStart || 0,
