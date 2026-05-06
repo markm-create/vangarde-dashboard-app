@@ -349,7 +349,7 @@ const MirrorDashboard: React.FC<MirrorDashboardProps> = ({ currentUser }) => {
                   <StatItem label="Collected" val={formatCurrency(agent.collected)} icon={Wallet} color="emerald" />
                   <div className="grid grid-cols-3 gap-2 pt-4 border-t border-border-subtle"><MiniStat label="Out" val={agent.outboundCalls} /><MiniStat label="In" val={agent.inboundCalls} /><MiniStat label="Missed" val={agent.missedCalls} /></div>
                </div>
-               <div className="px-5 py-3 bg-surface-100 flex justify-between items-center"><div className="flex items-center gap-2 text-text-muted"><Timer size={14} /><span className="text-[11px] font-bold font-inter">{formatDuration(agent.callDuration)}</span></div><div className="text-indigo-600 dark:text-indigo-400 font-black text-xs">{Math.floor((agent.accountsWorked / agent.currentAssigned) * 100)}% <span className="text-[9px] text-text-muted uppercase">Coverage</span></div></div>
+               <div className="px-5 py-3 bg-surface-100 flex justify-between items-center"><div className="flex items-center gap-2 text-text-muted"><Timer size={14} /><span className="text-[11px] font-bold font-inter">{formatDuration(agent.totalCallTime)}</span></div><div className="text-indigo-600 dark:text-indigo-400 font-black text-xs">{Math.floor((agent.accountsWorked / agent.currentAssigned) * 100)}% <span className="text-[9px] text-text-muted uppercase">Coverage</span></div></div>
             </div>
           ))}
         </div>

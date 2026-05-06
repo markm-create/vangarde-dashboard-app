@@ -73,7 +73,22 @@ const IndividualCollectorDashboard: React.FC<{ collector: Collector; onViewAudit
     }
     return false;
   });
-  
+
+  const hasAuditComplianceIssues = useMemo(() => {
+    const onboarding = onboardingAudits.data
+      .filter(a => isNameMatch(a.collectorName || a.agentName, collector.name))
+      .filter(a => String(a.auditResult || '').trim().toLowerCase() !== 'passed');
+      
+    const billing = billingAudit.data
+      .filter(a => isNameMatch(a.agentName || a.collectorName, collector.name))
+      .filter(a => ['Update PPA', 'Delete PPA', 'Follow-Up PPA'].includes(String(a.ppaAction || '').trim()));
+      
+    const stagnant = flaggedAccounts.data
+      .filter(a => isNameMatch(a.agentName || a.collectorName, collector.name));
+      
+    return onboarding.length > 0 || billing.length > 0 || stagnant.length > 0;
+  }, [onboardingAudits.data, billingAudit.data, flaggedAccounts.data, collector.name]);
+
   const PALETTE = { 
     PURPLE: "#818cf8", 
     ORANGE: "#ea580c", 
@@ -411,6 +426,17 @@ const IndividualCollectorDashboard: React.FC<{ collector: Collector; onViewAudit
         </div>
         
         <div className="flex items-center gap-3">
+          <button
+            onClick={onViewAudits}
+            className={`px-5 py-2.5 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all shadow-sm active:scale-95 flex items-center gap-2 ${
+              hasAuditComplianceIssues 
+                ? 'bg-rose-500 text-white border border-rose-600 hover:bg-rose-600 animate-pulse'
+                : 'bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100/80 hover:border-indigo-200'
+            }`}
+          >
+            <ShieldAlert size={14} className={hasAuditComplianceIssues ? 'text-white' : 'opacity-70'} />
+            Audit Logs
+          </button>
           <button 
             onClick={() => fetchIndividualCollectors(true)}
             disabled={individualCollectors.isLoading}

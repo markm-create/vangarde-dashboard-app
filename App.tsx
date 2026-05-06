@@ -465,13 +465,25 @@ export default function App() {
           );
         }
         return <div className="p-8 text-slate-400">Please select a metric category.</div>;
+      case 'individual-audits':
+        if (selectedCollector) {
+          return (
+            <IndividualAuditLogs 
+              collector={selectedCollector} 
+              onBack={() => resetToMainTab('individual')} 
+              canManageDocuments={currentUser.permissions.manageDocuments}
+              canSendReport={currentUser.permissions.sendReport}
+            />
+          );
+        }
+        return <div className="p-8 text-slate-400">Please select a collector from the sidebar.</div>;
       case 'individual':
         if (selectedCollector) {
           return (
             <IndividualCollectorDashboard 
               key={selectedCollector.id}
               collector={selectedCollector} 
-              onViewAudits={() => resetToMainTab('audits')} 
+              onViewAudits={() => resetToMainTab('individual-audits')} 
               onCollectorDeleted={handleCollectorDeleted}
             />
           );
