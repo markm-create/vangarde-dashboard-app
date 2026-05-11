@@ -29,14 +29,14 @@ function processRequest(e) {
       const dataRange = sheet.getRange(2, 1, lastRow - 1, lastColumn);
       const values = dataRange.getValues();
       
-      records = values.map(row => {
+      records = values.map((row, index) => {
         let tDate = "";
         if (row[0]) {
           tDate = row[0] instanceof Date ? Utilities.formatDate(row[0], ss.getSpreadsheetTimeZone(), "MMM dd, yyyy h:mm a") : row[0].toString();
         }
         let rDate = "";
-        if (row[5]) {
-          rDate = row[5] instanceof Date ? Utilities.formatDate(row[5], ss.getSpreadsheetTimeZone(), "MMM dd, yyyy") : row[5].toString();
+        if (row[6]) {
+          rDate = row[6] instanceof Date ? Utilities.formatDate(row[6], ss.getSpreadsheetTimeZone(), "MMM dd, yyyy") : row[6].toString();
         }
 
         return {
@@ -44,9 +44,10 @@ function processRequest(e) {
           accountNumber: row[1] ? row[1].toString() : "",
           collectorName: row[2] ? row[2].toString() : "",
           amount: parseFloat(row[3]) || 0,
-          status: row[4] ? row[4].toString().trim() : "",
+          auditResult: row[4] ? row[4].toString().trim() : "",
+          status: row[5] ? row[5].toString().trim() : "",
           recoveryDate: rDate,
-          auditComments: row[6] ? row[6].toString() : ""
+          auditComments: row[7] ? row[7].toString() : ""
         };
       }).filter(r => r.accountNumber || r.collectorName || r.amount > 0);
     }

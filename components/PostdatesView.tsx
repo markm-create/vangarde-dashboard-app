@@ -21,8 +21,10 @@ import { useData } from '../DataContext';
 
 import { AppUser } from '../types';
 
-interface Payment { accountId: string; owner: string; dateTime: string; amount: number; status: 'Scheduled' | 'Succeeded' | 'Declined' | 'Failed' | 'Recovered' | 'Rescheduled' | 'Unrecoverable'; rawDate: Date; }
+interface Payment { accountId: string; owner: string; dateTime: string; amount: number; status: 'Scheduled' | 'Succeeded' | 'Declined' | 'Failed' | 'Recovered' | 'Rescheduled' | 'Unrecoverable'; rawDate: Date; ppaAuditStatus?: string; }
 const OWNERS = ["Arianne Sanchez", "Sophia Smith", "Penelope Williams", "Mary Smith", "Kim Park", "Karen Justice", "Elizabeth Harris", "Chris Reed", "Chase Schaffer", "Charles Phillips"];
+
+const formatCurrency = (val: number) => `$${(Number(val) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const generatePayments = (count: number, type: 'scheduled' | 'processed'): Payment[] => {
   return Array.from({ length: count }).map((_, i) => {
@@ -39,6 +41,15 @@ const generatePayments = (count: number, type: 'scheduled' | 'processed'): Payme
     }
     return { accountId: `2026-${1000 + i}`, owner, dateTime: date.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }), amount, status, rawDate: date };
   });
+};
+
+const getPpaStatusColor = (status?: string) => {
+  const s = String(status || '').trim().toLowerCase();
+  if (s.includes('not matched')) return 'bg-rose-50 text-rose-600';
+  if (s.includes('matched')) return 'bg-emerald-50 text-emerald-600';
+  if (s.includes('wire transfer')) return 'bg-blue-50 text-blue-600';
+  if (s !== '') return 'bg-rose-50 text-rose-600';
+  return '';
 };
 
 const PaymentTable: React.FC<{ 
@@ -69,9 +80,16 @@ const PaymentTable: React.FC<{
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const filterOptions = useMemo(() => {
+    if (type === 'processed') return ['All', 'Succeeded', 'Failed', 'Recovered', 'Rescheduled', 'Unrecoverable'];
+    const ppaSet = new Set<string>();
+    initialData.forEach(item => { if (item.ppaAuditStatus) ppaSet.add(item.ppaAuditStatus); });
+    return ['All', ...Array.from(ppaSet)].sort();
+  }, [type, initialData]);
+
   const filteredData = useMemo(() => {
     let data = [...initialData];
-    if (filterText) { const lower = filterText.toLowerCase(); data = data.filter(item => item.accountId.toLowerCase().includes(lower) || item.owner.toLowerCase().includes(lower) || item.amount.toString().includes(lower) || item.status.toLowerCase().includes(lower)); }
+    if (filterText) { const lower = filterText.toLowerCase(); data = data.filter(item => item.accountId.toLowerCase().includes(lower) || item.owner.toLowerCase().includes(lower) || item.amount.toString().includes(lower) || item.status.toLowerCase().includes(lower) || (item.ppaAuditStatus || '').toLowerCase().includes(lower)); }
     if (ownerFilter !== 'All') data = data.filter(item => item.owner === ownerFilter);
     if (type === 'processed' && statusFilter !== 'All') {
       if (statusFilter === 'Failed') {
@@ -79,6 +97,9 @@ const PaymentTable: React.FC<{
       } else {
         data = data.filter(item => item.status === statusFilter);
       }
+    }
+    if (type === 'scheduled' && statusFilter !== 'All') {
+      data = data.filter(item => item.ppaAuditStatus === statusFilter);
     }
     if (dateFilter.start || dateFilter.end) {
       data = data.filter(item => {
@@ -113,13 +134,13 @@ const PaymentTable: React.FC<{
   };
 
   const handleExport = () => {
-    const headers = ["Account ID", "Owner", "Date Time", "Amount", "Status"];
+    const headers = ["Account ID", "Owner", "Date Time", "Amount", type === 'scheduled' ? "PPA Audit Status" : "Status"];
     const rows = filteredData.map(r => [
       `"${r.accountId}"`,
       `"${r.owner}"`,
       `"${r.dateTime}"`,
-      r.amount.toFixed(2),
-      `"${r.status}"`
+      `"${formatCurrency(r.amount)}"`,
+      type === 'scheduled' ? `"${r.ppaAuditStatus || ''}"` : `"${r.status}"`
     ]);
     const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -165,14 +186,14 @@ const PaymentTable: React.FC<{
                 </div>
              )}
            </div>
-           {type === 'processed' && (
+           {(type === 'processed' || type === 'scheduled') && (
              <div className="relative" ref={filterRef}>
                <button onClick={() => setIsFilterOpen(!isFilterOpen)} className={`p-2 rounded-xl border transition-colors ${isFilterOpen || statusFilter !== 'All' ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 text-indigo-600' : 'bg-surface-100 border-border-subtle text-text-muted hover:bg-card'}`}><Filter size={16} /></button>
                {isFilterOpen && (
                  <div className="absolute right-0 top-full mt-2 w-48 bg-card rounded-xl shadow-2xl border border-border-subtle p-4 z-50 animate-in fade-in zoom-in-95">
-                   <div className="flex justify-between items-center mb-4"><h4 className="text-xs font-bold text-text-main uppercase tracking-wider">Status Filter</h4><button onClick={() => setIsFilterOpen(false)} className="text-text-muted"><X size={14} /></button></div>
+                   <div className="flex justify-between items-center mb-4"><h4 className="text-xs font-bold text-text-main uppercase tracking-wider">{type === 'scheduled' ? 'Audit Status' : 'Status Filter'}</h4><button onClick={() => setIsFilterOpen(false)} className="text-text-muted"><X size={14} /></button></div>
                    <div className="space-y-1">
-                     {['All', 'Succeeded', 'Failed', 'Recovered', 'Rescheduled', 'Unrecoverable'].map((status) => (
+                     {filterOptions.map((status) => (
                        <button
                          key={status}
                          onClick={() => {
@@ -200,13 +221,18 @@ const PaymentTable: React.FC<{
               <th className="px-6 py-4 font-bold bg-card cursor-pointer hover:bg-surface-100" onClick={() => requestSort('owner')}>Owner <SortIcon columnKey="owner" /></th>
               <th className="px-6 py-4 font-bold bg-card cursor-pointer hover:bg-surface-100" onClick={() => requestSort('dateTime')}>Date & Time <SortIcon columnKey="dateTime" /></th>
               <th className="px-6 py-4 text-right font-bold bg-card cursor-pointer hover:bg-surface-100" onClick={() => requestSort('amount')}>Amount <SortIcon columnKey="amount" /></th>
+              {type === 'scheduled' && (
+                <th className="px-6 py-4 text-left font-bold bg-card cursor-pointer hover:bg-surface-100" onClick={() => requestSort('ppaAuditStatus')}>
+                  PPA Audit Status <SortIcon columnKey="ppaAuditStatus" />
+                </th>
+              )}
               {type === 'processed' && (<th className="px-6 py-4 text-right font-bold bg-card cursor-pointer hover:bg-surface-100" onClick={() => requestSort('status')}>Status <SortIcon columnKey="status" /></th>)}
             </tr>
           </thead>
           <tbody className="divide-y divide-border-subtle">
             {isLoading && initialData.length === 0 ? (
               <tr>
-                <td colSpan={type === 'processed' ? 5 : 4} className="px-6 py-20">
+                <td colSpan={type === 'processed' ? 5 : (type === 'scheduled' ? 5 : 4)} className="px-6 py-20">
                   <div className="flex flex-col items-center justify-center text-text-muted w-full">
                     <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
                     <p className="text-[12px] font-black uppercase tracking-[0.2em] animate-pulse">Fetching records...</p>
@@ -218,7 +244,12 @@ const PaymentTable: React.FC<{
                   <td className="px-6 py-4 text-indigo-600 dark:text-indigo-400 font-inter italic">{row.accountId}</td>
                   <td className="px-6 py-4 text-text-main font-normal">{row.owner}</td>
                   <td className="px-6 py-4 text-text-muted font-inter font-normal">{row.dateTime}</td>
-                  <td className="px-6 py-4 text-right text-text-main font-inter font-normal">${row.amount.toFixed(2)}</td>
+                  <td className="px-6 py-4 text-right text-text-main font-inter font-normal">{formatCurrency(row.amount)}</td>
+                  {type === 'scheduled' && (
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-0.5 rounded text-[9px] font-bold tracking-wide uppercase ${getPpaStatusColor(row.ppaAuditStatus)}`}>{row.ppaAuditStatus || '-'}</span>
+                    </td>
+                  )}
                   {type === 'processed' && (
                     <td className="px-6 py-4 text-right">
                       <span className={`px-2 py-0.5 rounded text-[9px] font-bold tracking-wide uppercase ${
@@ -233,7 +264,7 @@ const PaymentTable: React.FC<{
                     </td>
                   )}
                 </tr>
-              ))) : (<tr><td colSpan={type === 'processed' ? 5 : 4} className="px-6 py-20"><div className="flex flex-col items-center justify-center text-text-muted opacity-20 w-full"><FileSearch size={48} className="mb-3" /><p className="text-[12px] font-black uppercase tracking-[0.2em]">No records found</p></div></td></tr>)}
+              ))) : (<tr><td colSpan={type === 'processed' ? 5 : (type === 'scheduled' ? 5 : 4)} className="px-6 py-20"><div className="flex flex-col items-center justify-center text-text-muted opacity-20 w-full"><FileSearch size={48} className="mb-3" /><p className="text-[12px] font-black uppercase tracking-[0.2em]">No records found</p></div></td></tr>)}
           </tbody>
         </table>
       </div>

@@ -967,8 +967,8 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
       headers = ["Account #", "Collector Name", "Date Assigned", "Date Activated", "Date Audit", "Result", "Comments"];
       rows = filteredData.map(r => [ `"${r.accountNumber}"`, `"${r.collectorName}"`, `"${r.dateAssigned}"`, `"${r.dateActivated}"`, `"${r.dateAudit}"`, `"${r.auditResult}"`, `"${r.comments?.replace(/"/g, '""') || ''}"` ]);
     } else if (viewType === 'postdates') {
-      headers = ["Transaction Date", "Account #", "Agent Name", "Amount", "Status", "Recovery Date", "Findings"];
-      rows = filteredData.map(r => [ `"${r.transactionDate}"`, `"${r.accountNumber}"`, `"${r.collectorName || r.agentName}"`, (r.amount || r.paymentAmount || 0).toFixed(2), `"${r.status || r.paymentStatus}"`, `"${r.recoveryDate || '-'}"`, `"${r.auditComments || r.auditFindings || ''}"` ]);
+      headers = ["Transaction Date", "Account #", "Agent Name", "Amount", "PPA Audit Status", "Status", "Recovery Date", "Findings"];
+      rows = filteredData.map(r => [ `"${r.transactionDate}"`, `"${r.accountNumber}"`, `"${r.collectorName || r.agentName}"`, `"${formatCurrency(r.amount || r.paymentAmount || 0)}"`, `"${r.auditResult || ''}"`, `"${r.status || r.paymentStatus}"`, `"${r.recoveryDate || '-'}"`, `"${r.auditComments || r.auditFindings || ''}"` ]);
     } else if (viewType === 'billing') {
       headers = ["Account #", "Agent Name", "Client Name", "Account Status", "Agreement Amount", "Overdue Amount", "Overdue Date", "PPA Action", "Findings"];
       rows = filteredData.map(r => [ `"${r.accountNumber}"`, `"${r.agentName}"`, `"${r.clientName}"`, `"${r.accountStatus}"`, r.agreementAmount.toFixed(2), r.overdueAmount.toFixed(2), `"${r.overdueDate}"`, `"${r.ppaAction}"`, `"${r.auditFindings || ''}"` ]);
@@ -1057,6 +1057,7 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
           <th className="px-6 py-5 cursor-pointer hover:bg-surface-100 transition-colors" onClick={() => requestSort('accountNumber')}>Account # <SortIcon columnKey="accountNumber" /></th>
           <th className="px-6 py-5 cursor-pointer hover:bg-surface-100 transition-colors" onClick={() => requestSort('collectorName')}>Agent Name <SortIcon columnKey="collectorName" /></th>
           <th className="px-6 py-5 text-right cursor-pointer hover:bg-surface-100 transition-colors" onClick={() => requestSort('amount')}>Amount <SortIcon columnKey="amount" /></th>
+          <th className="px-6 py-5 cursor-pointer hover:bg-surface-100 transition-colors" onClick={() => requestSort('auditResult')}>PPA Audit Status <SortIcon columnKey="auditResult" /></th>
           <th className="px-6 py-5 cursor-pointer hover:bg-surface-100 transition-colors" onClick={() => requestSort('status')}>Status <SortIcon columnKey="status" /></th>
           <th className="px-6 py-5 cursor-pointer hover:bg-surface-100 transition-colors" onClick={() => requestSort('recoveryDate')}>Recovery Date <SortIcon columnKey="recoveryDate" /></th>
           <th className="px-6 py-5 cursor-pointer hover:bg-surface-100 transition-colors" onClick={() => requestSort('auditComments')}>Findings <SortIcon columnKey="auditComments" /></th>
@@ -1135,7 +1136,7 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
           <td className="px-6 py-4">
             <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${String(row.auditResult || '').trim().toLowerCase() === 'passed' ? 'bg-emerald-50 text-emerald-600' : (String(row.auditResult || '').trim().toLowerCase() === 'pending' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600')}`}>{row.auditResult}</span>
           </td>
-          <td className="px-6 py-4 text-text-muted italic truncate max-w-xs" title={row.comments}>{row.comments || '-'}</td>
+          <td className="px-6 py-4 text-text-muted italic">{row.comments || '-'}</td>
         </tr>
       );
     }
@@ -1162,14 +1163,24 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
             )}
           </td>
           <td className="px-6 py-4 font-bold text-text-main">{row.collectorName || row.agentName}</td>
-          <td className="px-6 py-4 text-right font-inter font-bold">${(row.amount || row.paymentAmount || 0).toFixed(2)}</td>
+          <td className="px-6 py-4 text-right font-inter font-bold">{formatCurrency(row.amount || row.paymentAmount || 0)}</td>
+          <td className="px-6 py-4">
+            <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${(() => {
+              const s = String(row.auditResult || '').trim().toLowerCase();
+              if (s.includes('not matched')) return 'bg-rose-50 text-rose-600';
+              if (s.includes('matched')) return 'bg-emerald-50 text-emerald-600';
+              if (s.includes('wire transfer')) return 'bg-blue-50 text-blue-600';
+              if (s !== '') return 'bg-rose-50 text-rose-600';
+              return '';
+            })()}`}>{row.auditResult || '-'}</span>
+          </td>
           <td className="px-6 py-4">
             <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${statusColors[row.status || row.paymentStatus] || 'bg-surface-100 text-text-muted'}`}>
                 {row.status || row.paymentStatus}
             </span>
           </td>
           <td className="px-6 py-4 text-text-muted">{row.recoveryDate || '-'}</td>
-          <td className="px-6 py-4 text-text-muted italic truncate max-w-xs">{row.auditComments || row.auditFindings}</td>
+          <td className="px-6 py-4 text-text-muted italic">{row.auditComments || row.auditFindings || '-'}</td>
         </tr>
       );
     }
@@ -1202,7 +1213,7 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
                'text-indigo-600'
              }`}>{row.ppaAction}</span>
           </td>
-          <td className="px-6 py-4 text-text-muted italic truncate max-w-xs">{row.auditFindings}</td>
+          <td className="px-6 py-4 text-text-muted italic">{row.auditFindings || '-'}</td>
         </tr>
       );
     }
@@ -1231,7 +1242,7 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
           <td className="px-6 py-4">
             <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${String(row.auditResult || row.outcome || '').includes('Return') ? 'text-rose-600' : 'text-indigo-600'}`}>{row.auditResult || row.outcome}</span>
           </td>
-          <td className="px-6 py-4 text-text-muted italic truncate max-w-xs" title={row.auditComments || row.auditFindings}>{row.auditComments || row.auditFindings || '-'}</td>
+          <td className="px-6 py-4 text-text-muted italic">{row.auditComments || row.auditFindings || '-'}</td>
         </tr>
       );
     }
@@ -1249,8 +1260,10 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
               row.accountNumber
             )}
           </td>
-          <td className="px-6 py-4 text-text-muted">{row.logTracker || row.caseUpdate}</td>
-          <td className="px-6 py-4 text-text-muted italic truncate max-w-xs" title={row.rpcNotes || row.auditComments || row.auditFindings}>{row.rpcNotes || row.auditComments || row.auditFindings || '-'}</td>
+          <td className="px-6 py-4">
+            <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${String(row.logTracker || row.caseUpdate || '').trim().toLowerCase() === 'logged' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>{row.logTracker || row.caseUpdate}</span>
+          </td>
+          <td className="px-6 py-4 text-text-muted italic">{row.rpcNotes || row.auditComments || row.auditFindings || '-'}</td>
         </tr>
       );
     }
@@ -1270,7 +1283,7 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
         <td className="px-6 py-4">
           <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${row.auditResult === 'Passed' ? 'bg-emerald-50 text-emerald-600' : (row.auditResult === 'Pending' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600')}`}>{row.auditResult}</span>
         </td>
-        <td className="px-6 py-4 text-text-muted italic truncate max-w-xs">{row.auditComments}</td>
+        <td className="px-6 py-4 text-text-muted italic">{row.auditComments || '-'}</td>
       </tr>
     );
   };
@@ -1300,9 +1313,9 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
                   <div className="bg-card p-6 rounded-2xl border border-border-subtle shadow-sm flex items-center justify-between transition-all hover:shadow-md group">
                       <div>
                           <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-1">Total Not Logged</p>
-                          <p className="text-3xl font-black text-amber-600">{stats.totalNotLogged}</p>
+                          <p className="text-3xl font-black text-rose-600">{stats.totalNotLogged}</p>
                       </div>
-                      <div className="p-3 rounded-xl bg-amber-50 text-amber-600 group-hover:scale-110 transition-transform">
+                      <div className="p-3 rounded-xl bg-rose-50 text-rose-600 group-hover:scale-110 transition-transform">
                           <AlertTriangle size={24} />
                       </div>
                   </div>
