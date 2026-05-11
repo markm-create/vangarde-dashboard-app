@@ -822,7 +822,16 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
         if (viewType === 'onboarding') return lowerFilters.includes(String(i.auditResult || '').trim().toLowerCase());
         if (viewType === 'postdates') return lowerFilters.includes(String(i.status || i.paymentStatus || '').trim().toLowerCase());
         if (viewType === 'billing') return lowerFilters.includes(String(i.ppaAction || '').trim().toLowerCase());
-        if (viewType === 'aee_rtp') return lowerFilters.includes(String(i.outcome || '').trim().toLowerCase());
+        if (viewType === 'aee_rtp') {
+            const val = String(i.auditResult || i.outcome || '').trim().toLowerCase();
+            return lowerFilters.some(f => {
+                if (f.includes('keep') && val.includes('keep')) return true;
+                if (f.includes('aee') && val.includes('aee')) return true;
+                if (f.includes('rtp') && val.includes('rtp')) return true;
+                if (f.includes('bankrupt') && val.includes('bankrupt')) return true;
+                return val === f;
+            });
+        }
         if (viewType === 'rpc') return lowerFilters.includes(String(i.caseUpdate || '').trim().toLowerCase()) || lowerFilters.includes(String(i.rpcType || '').trim().toLowerCase());
         return true;
       });
