@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { sheetService } from './services/sheetService';
 import { ExecutiveData, HomeData, Collector, AuditScoringData } from './types';
-import { PROJECTION_SCRIPT_URL, ONBOARDING_AUDIT_SCRIPT_URL, ACCOUNT_CLOSURE_AUDIT_SCRIPT_URL, DECLINE_RECOVERY_SCRIPT_URL, KPI_SCRIPT_URL } from './constants';
+import { PROJECTION_SCRIPT_URL, ONBOARDING_AUDIT_SCRIPT_URL, ACCOUNT_CLOSURE_AUDIT_SCRIPT_URL, DECLINE_RECOVERY_SCRIPT_URL, KPI_SCRIPT_URL, RPC_AUDIT_SCRIPT_URL } from './constants';
 
 interface Payment { 
   accountId: string; 
@@ -131,6 +131,12 @@ interface DataContextType {
     lastFetched: number | null;
     error: string | null;
   };
+  rpcAudits: {
+    data: any[];
+    isLoading: boolean;
+    lastFetched: number | null;
+    error: string | null;
+  };
   declineRecovery: {
     data: any | null;
     isLoading: boolean;
@@ -189,6 +195,7 @@ interface DataContextType {
   fetchIndividualCollectors: (force?: boolean) => Promise<void>;
   fetchOnboardingAudits: (force?: boolean) => Promise<void>;
   fetchAccountClosureAudit: (force?: boolean) => Promise<void>;
+  fetchRpcAudits: (force?: boolean) => Promise<void>;
   fetchDeclineRecovery: (force?: boolean) => Promise<void>;
   fetchBillingAudit: (force?: boolean) => Promise<void>;
   fetchAuditScoring: (collectorName: string, force?: boolean) => Promise<void>;
@@ -310,6 +317,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [accountClosureAudit, setAccountClosureAudit] = useState<DataContextType['accountClosureAudit']>({
+    data: [],
+    isLoading: false,
+    lastFetched: null,
+    error: null,
+  });
+
+  const [rpcAudits, setRpcAudits] = useState<DataContextType['rpcAudits']>({
     data: [],
     isLoading: false,
     lastFetched: null,
@@ -892,6 +906,61 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [accountClosureAudit.lastFetched]);
 
+  const fetchRpcAudits = useCallback(async (force = false) => {
+    if (!force && rpcAudits.lastFetched && Date.now() - rpcAudits.lastFetched < 300000) {
+      return;
+    }
+
+    setRpcAudits(prev => ({ ...prev, isLoading: true, error: null }));
+    try {
+      const SCRIPT_URL = import.meta.env.VITE_RPC_AUDIT_SCRIPT_URL || RPC_AUDIT_SCRIPT_URL;
+      
+      if (!SCRIPT_URL) {
+        throw new Error('RPC Audit URL not provided');
+      }
+
+      const response = await fetch(`${SCRIPT_URL}?action=getRpcAudits`);
+      if (!response.ok) throw new Error(`Server responded with status ${response.status}`);
+      
+      const responseText = await response.text();
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (e) {
+        throw new Error(`Invalid JSON response: The connection may be blocked or URL is incorrect.`);
+      }
+      if (result.status === 'error') throw new Error(result.message);
+
+      const rawData = result.data || [];
+      const filteredData = rawData.filter((item: any) => {
+        const accNum = String(item.accountNumber || '').toLowerCase();
+        const agent = String(item.collectorName || item.agentName || '').toLowerCase();
+        if (accNum.includes('account') && accNum.includes('number')) return false;
+        if (agent.includes('collector') || agent.includes('agent')) return false;
+        if (!accNum && !agent) return false;
+        return true;
+      });
+
+      setRpcAudits({
+        data: filteredData,
+        isLoading: false,
+        lastFetched: Date.now(),
+        error: null,
+      });
+    } catch (error) {
+      let errMsg = 'Failed to fetch RPC audits';
+      if (error instanceof Error) {
+        errMsg = error.message;
+      }
+      if (errMsg.includes('Unexpected token')) {
+         errMsg = 'Authentication error. The Google Apps Script needs to be set to execute as "Me" and access "Anyone".';
+      } else if (!errMsg.includes('Invalid JSON response')) {
+         console.error('Error fetching RPC audits:', error);
+      }
+      setRpcAudits(prev => ({ ...prev, isLoading: false, error: errMsg }));
+    }
+  }, [rpcAudits.lastFetched]);
+
   const fetchDeclineRecovery = useCallback(async (force = false) => {
     if (!force && declineRecovery.lastFetched && Date.now() - declineRecovery.lastFetched < 300000) {
       return;
@@ -1080,6 +1149,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       individualCollectors,
       onboardingAudits,
       accountClosureAudit,
+      rpcAudits,
       declineRecovery,
       billingAudit,
       auditScoring,
@@ -1104,6 +1174,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       fetchIndividualCollectors,
       fetchOnboardingAudits,
       fetchAccountClosureAudit,
+      fetchRpcAudits,
       fetchDeclineRecovery,
       fetchBillingAudit,
       fetchAuditScoring,

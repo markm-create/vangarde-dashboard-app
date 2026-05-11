@@ -63,6 +63,9 @@ export const ONBOARDING_AUDIT_SCRIPT_URL: string = "https://script.google.com/ma
 // Account Closure Audit Script URL
 export const ACCOUNT_CLOSURE_AUDIT_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_ACCOUNT_CLOSURE_AUDIT_URL, "https://script.google.com/macros/s/AKfycbzle7UUrdcDp5vw1_XUQuYjNQM2GYS_vGhHI2R47KhT-IO9Qy9_BSRrJp7a8Odd4bVLlw/exec");
 
+// RPC Audit Script URL
+export const RPC_AUDIT_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_RPC_AUDIT_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbxC2PEHJaMFl6lf5zGxlbK2zN0Le1HaUSYRqnB86_bFujeUlBu1dzTkwZTaaDeOTPMu3Q/exec");
+
 // Billing Audit Script URL
 export const BILLING_AUDIT_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_BILLING_AUDIT_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbxjOoPRA0WoS45ehHUpJu_HR_ZJsYVGI5Wk85UuAgMkZAWrX4d09rKD_8kQlCskYZ9fVA/exec");
 

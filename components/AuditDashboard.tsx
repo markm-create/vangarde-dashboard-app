@@ -99,7 +99,9 @@ const AuditDashboard: React.FC<{
     declineRecovery,
     fetchDeclineRecovery,
     accountClosureAudit,
-    fetchAccountClosureAudit
+    fetchAccountClosureAudit,
+    rpcAudits,
+    fetchRpcAudits
   } = useData();
   
   useEffect(() => {
@@ -125,7 +127,10 @@ const AuditDashboard: React.FC<{
     if (activeView === 'aee_rtp') {
       fetchAccountClosureAudit();
     }
-  }, [activeView, fetchFlaggedAccounts, fetchOnboardingAudits, fetchDeclineRecovery, fetchAccountClosureAudit]);
+    if (activeView === 'rpc') {
+      fetchRpcAudits();
+    }
+  }, [activeView, fetchFlaggedAccounts, fetchOnboardingAudits, fetchDeclineRecovery, fetchAccountClosureAudit, fetchRpcAudits]);
 
   const onboardingData = useMemo(() => onboardingAudits.data, [onboardingAudits.data]);
   const postdatesData = useMemo(() => {
@@ -199,7 +204,7 @@ const AuditDashboard: React.FC<{
   const accountMonitoringData = useMemo(() => generateAccountMonitoringAudits(100), []);
   const callMonitoringData = useMemo(() => generateCallMonitoringAudits(50), []);
   const sevenEightDayData = useMemo(() => flaggedAccounts.data.length > 0 ? flaggedAccounts.data : generateSevenEightDayAudits(150), [flaggedAccounts.data]);
-  const rpcData = useMemo(() => generateRpcAudits(50), []);
+  const rpcData = useMemo(() => rpcAudits.data, [rpcAudits.data]);
 
   if (activeView === 'overview') {
     return (
@@ -292,8 +297,8 @@ const AuditDashboard: React.FC<{
     case 'rpc': config = { data: rpcData, title: "RPC Audit", icon: UserCheck, color: "#14b8a6" }; break;
   }
 
-  const isLoading = activeView === 'onboarding' ? onboardingAudits.isLoading : (activeView === 'postdates' ? declineRecovery.isLoading : (activeView === 'aee_rtp' ? accountClosureAudit.isLoading : false));
-  const onRefresh = activeView === 'onboarding' ? () => fetchOnboardingAudits(true) : (activeView === 'postdates' ? () => fetchDeclineRecovery(true) : (activeView === 'aee_rtp' ? () => fetchAccountClosureAudit(true) : undefined));
+  const isLoading = activeView === 'onboarding' ? onboardingAudits.isLoading : (activeView === 'postdates' ? declineRecovery.isLoading : (activeView === 'aee_rtp' ? accountClosureAudit.isLoading : (activeView === 'rpc' ? rpcAudits.isLoading : false)));
+  const onRefresh = activeView === 'onboarding' ? () => fetchOnboardingAudits(true) : (activeView === 'postdates' ? () => fetchDeclineRecovery(true) : (activeView === 'aee_rtp' ? () => fetchAccountClosureAudit(true) : (activeView === 'rpc' ? () => fetchRpcAudits(true) : undefined)));
 
   return (<GenericAuditTable title={config.title} data={config.data} summaryData={config.summaryData} viewType={activeView} onBack={() => onNavigate ? window.history.back() : setActiveView('overview')} canExport={canManageDocuments} isLoading={isLoading} onRefresh={onRefresh} />);
 };
@@ -832,7 +837,14 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
                 return val === f;
             });
         }
-        if (viewType === 'rpc') return lowerFilters.includes(String(i.caseUpdate || '').trim().toLowerCase()) || lowerFilters.includes(String(i.rpcType || '').trim().toLowerCase());
+        if (viewType === 'rpc') {
+            const val = String(i.logTracker || i.caseUpdate || '').trim().toLowerCase();
+            return lowerFilters.some(f => {
+                if (f === 'logged') return val === 'logged';
+                if (f === 'not logged') return val !== 'logged' && val !== '';
+                return false;
+            });
+        }
         return true;
       });
     }
@@ -868,13 +880,13 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
   const stats = useMemo(() => {
       if (viewType === 'rpc') {
           const totalRpc = filteredData.length;
-          const totalPayment = filteredData.reduce((sum: number, item: any) => sum + (item.paymentAmount || 0), 0);
-          const conversionRate = totalRpc > 0 ? ((filteredData.filter((i: any) => i.caseUpdate === 'Collected').length / totalRpc) * 100).toFixed(1) : "0.0";
+          const totalLogged = filteredData.filter((i: any) => String(i.logTracker || i.caseUpdate || '').trim().toLowerCase() === 'logged').length;
+          const totalNotLogged = totalRpc - totalLogged;
           
           return {
               totalRpc,
-              totalPayment,
-              conversionRate
+              totalLogged,
+              totalNotLogged
           };
       }
       if (viewType === 'postdates') {
@@ -973,6 +985,15 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
         `"${r.auditResult || r.outcome}"`, 
         `"${r.auditComments || r.auditFindings || ''}"` 
       ]);
+    } else if (viewType === 'rpc') {
+      headers = ["Date", "Collector Name", "Account #", "Log Tracker", "RPC Notes"];
+      rows = filteredData.map(r => [ 
+        `"${r.callDate || r.date}"`, 
+        `"${r.agentName || r.collectorName}"`, 
+        `"${r.accountNumber}"`, 
+        `"${r.logTracker || r.caseUpdate}"`, 
+        `"${(r.rpcNotes || r.auditComments || r.auditFindings || '').replace(/"/g, '""')}"` 
+      ]);
     } else {
       headers = ["Account #", "Agent Name", "Date Audited", "Result", "Comments"];
       rows = filteredData.map(r => [ `"${r.accountNumber}"`, `"${r.agentName}"`, `"${r.dateAudited}"`, `"${r.auditResult}"`, `"${r.auditComments.replace(/"/g, '""')}"` ]);
@@ -1004,7 +1025,7 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
         case 'postdates': return ['Recovered', 'Ongoing', 'Need Follow-up', 'Broken Promise', 'Rescheduled', 'Unrecoverable'];
         case 'billing': return ['No Update Needed', 'Update PPA', 'Delete PPA', 'Follow-Up PPA'];
         case 'aee_rtp': return ['Keep - Reworkable', 'Client Return - AEE', 'Client Return - RTP', 'Pending Bankruptcy'];
-        case 'rpc': return ['Collected', 'Ghosted', 'RTP', 'Debtor', '3rd Party', 'Wrong Number'];
+        case 'rpc': return ['Logged', 'Not Logged'];
         default: return [];
     }
   };
@@ -1075,13 +1096,11 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
     if (viewType === 'rpc') {
       return (
         <tr className="text-[10px] font-black text-text-muted uppercase border-b border-border-subtle bg-surface-100/50">
+          <th className="px-6 py-5 cursor-pointer hover:bg-surface-100 transition-colors" onClick={() => requestSort('callDate')}>Date <SortIcon columnKey="callDate" /></th>
+          <th className="px-6 py-5 cursor-pointer hover:bg-surface-100 transition-colors" onClick={() => requestSort('agentName')}>Collector Name <SortIcon columnKey="agentName" /></th>
           <th className="px-6 py-5 cursor-pointer hover:bg-surface-100 transition-colors" onClick={() => requestSort('accountNumber')}>Account # <SortIcon columnKey="accountNumber" /></th>
-          <th className="px-6 py-5 cursor-pointer hover:bg-surface-100 transition-colors" onClick={() => requestSort('agentName')}>Agent <SortIcon columnKey="agentName" /></th>
-          <th className="px-6 py-5 cursor-pointer hover:bg-surface-100 transition-colors" onClick={() => requestSort('callDate')}>Call Date <SortIcon columnKey="callDate" /></th>
-          <th className="px-6 py-5 cursor-pointer hover:bg-surface-100 transition-colors" onClick={() => requestSort('rpcType')}>RPC Type <SortIcon columnKey="rpcType" /></th>
-          <th className="px-6 py-5 cursor-pointer hover:bg-surface-100 transition-colors" onClick={() => requestSort('caseUpdate')}>Case Update <SortIcon columnKey="caseUpdate" /></th>
-          <th className="px-6 py-5 text-right cursor-pointer hover:bg-surface-100 transition-colors" onClick={() => requestSort('paymentAmount')}>Payment <SortIcon columnKey="paymentAmount" /></th>
-          <th className="px-6 py-5 cursor-pointer hover:bg-surface-100 transition-colors" onClick={() => requestSort('auditResult')}>Result <SortIcon columnKey="auditResult" /></th>
+          <th className="px-6 py-5 cursor-pointer hover:bg-surface-100 transition-colors" onClick={() => requestSort('logTracker')}>Log Tracker <SortIcon columnKey="logTracker" /></th>
+          <th className="px-6 py-5 cursor-pointer hover:bg-surface-100 transition-colors" onClick={() => requestSort('rpcNotes')}>RPC Notes <SortIcon columnKey="rpcNotes" /></th>
         </tr>
       );
     }
@@ -1219,6 +1238,8 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
     if (viewType === 'rpc') {
       return (
         <tr key={i} className="hover:bg-surface-100 transition-colors">
+          <td className="px-6 py-4 text-text-muted">{row.callDate || row.date}</td>
+          <td className="px-6 py-4 font-bold text-text-main">{row.agentName || row.collectorName}</td>
           <td className="px-6 py-4 font-black text-indigo-600">
             {row.accountUrl ? (
               <a href={row.accountUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
@@ -1228,16 +1249,8 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
               row.accountNumber
             )}
           </td>
-          <td className="px-6 py-4 font-bold text-text-main">{row.agentName}</td>
-          <td className="px-6 py-4 text-text-muted">{row.callDate}</td>
-          <td className="px-6 py-4 text-text-muted">{row.rpcType}</td>
-          <td className="px-6 py-4">
-            <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${row.caseUpdate === 'Collected' ? 'bg-emerald-50 text-emerald-600' : (row.caseUpdate === 'RTP' ? 'bg-rose-50 text-rose-600' : 'bg-surface-100 text-text-muted')}`}>{row.caseUpdate}</span>
-          </td>
-          <td className="px-6 py-4 text-right font-inter font-bold text-emerald-600">{row.paymentAmount > 0 ? formatCurrency(row.paymentAmount) : '-'}</td>
-          <td className="px-6 py-4">
-            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${row.auditResult === 'Passed' ? 'bg-emerald-50 text-emerald-600' : (row.auditResult === 'Pending' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600')}`}>{row.auditResult}</span>
-          </td>
+          <td className="px-6 py-4 text-text-muted">{row.logTracker || row.caseUpdate}</td>
+          <td className="px-6 py-4 text-text-muted italic truncate max-w-xs" title={row.rpcNotes || row.auditComments || row.auditFindings}>{row.rpcNotes || row.auditComments || row.auditFindings || '-'}</td>
         </tr>
       );
     }
@@ -1277,20 +1290,20 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
                   </div>
                   <div className="bg-card p-6 rounded-2xl border border-border-subtle shadow-sm flex items-center justify-between transition-all hover:shadow-md group">
                       <div>
-                          <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-1">Total Payment</p>
-                          <p className="text-3xl font-black text-emerald-600">{formatCurrency(stats.totalPayment)}</p>
+                          <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-1">Total Logged</p>
+                          <p className="text-3xl font-black text-emerald-600">{stats.totalLogged}</p>
                       </div>
                       <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600 group-hover:scale-110 transition-transform">
-                          <DollarSign size={24} />
+                          <CheckCircle2 size={24} />
                       </div>
                   </div>
                   <div className="bg-card p-6 rounded-2xl border border-border-subtle shadow-sm flex items-center justify-between transition-all hover:shadow-md group">
                       <div>
-                          <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-1">Conversion Rate</p>
-                          <p className="text-3xl font-black text-amber-600">{stats.conversionRate}%</p>
+                          <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-1">Total Not Logged</p>
+                          <p className="text-3xl font-black text-amber-600">{stats.totalNotLogged}</p>
                       </div>
                       <div className="p-3 rounded-xl bg-amber-50 text-amber-600 group-hover:scale-110 transition-transform">
-                          <TrendingUp size={24} />
+                          <AlertTriangle size={24} />
                       </div>
                   </div>
               </div>
