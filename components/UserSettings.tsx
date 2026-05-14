@@ -750,6 +750,7 @@ const UserSettings: React.FC<UserSettingsProps> = ({ isDarkMode, onToggleDarkMod
                                 <ToggleItem label="KPI" desc="Key Performance Indicators" active={effectivePermissions.viewKPI} onToggle={() => handlePermissionToggle('viewKPI')} />
                                 <ToggleItem label="Postdates" desc="Payment Tables" active={effectivePermissions.viewPostdates} onToggle={() => handlePermissionToggle('viewPostdates')} />
                                 <ToggleItem label="Projection" desc="Target Forecasting" active={effectivePermissions.viewProjection} onToggle={() => handlePermissionToggle('viewProjection')} />
+                                <ToggleItem label="Disposition" desc="Outcome Tracking" active={effectivePermissions.viewDisposition} onToggle={() => handlePermissionToggle('viewDisposition')} />
                                 <ToggleItem label="Mirror" desc="Live Snapshots" active={effectivePermissions.viewMirror} onToggle={() => handlePermissionToggle('viewMirror')} />
                                 <ToggleItem label="RPC Logs" desc="Contact Records" active={effectivePermissions.viewRPCLogs} onToggle={() => handlePermissionToggle('viewRPCLogs')} />
                                 <ToggleItem label="Collector" desc="Team Ranks" active={effectivePermissions.viewCollectorDashboard} onToggle={() => handlePermissionToggle('viewCollectorDashboard')} />

@@ -7,7 +7,7 @@ export interface Collector {
   [key: string]: any;
 }
 
-export type TabType = 'home' | 'revenue' | 'executive' | 'kpi' | 'postdates' | 'projection' | 'mirror' | 'rpc-logs' | 'collector-overview' | 'individual' | 'audits' | 'individual-audits' | 'inventory' | 'campaign' | 'settings' | 'collections-history' | 'new-imports' | 'new-assigned' | 'call-performance' | 'reports' | 'overdue-payments' | 'collector-breakdown' | 'metric-breakdown' | 'collector-inventory' | 'recovery' | 'unactivated-accounts';
+export type TabType = 'home' | 'revenue' | 'executive' | 'kpi' | 'postdates' | 'projection' | 'disposition' | 'mirror' | 'rpc-logs' | 'collector-overview' | 'individual' | 'audits' | 'individual-audits' | 'inventory' | 'campaign' | 'settings' | 'collections-history' | 'new-imports' | 'new-assigned' | 'call-performance' | 'reports' | 'overdue-payments' | 'collector-breakdown' | 'metric-breakdown' | 'collector-inventory' | 'recovery' | 'unactivated-accounts';
 
 export interface AppPermissions {
   // Page Views
@@ -16,6 +16,7 @@ export interface AppPermissions {
   viewKPI: boolean;
   viewPostdates: boolean;
   viewProjection: boolean;
+  viewDisposition: boolean;
   viewMirror: boolean;
   viewRPCLogs: boolean;
   viewCollectorDashboard: boolean; // Overview

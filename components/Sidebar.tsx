@@ -19,7 +19,9 @@ import {
   FileText,
   AlertOctagon,
   Megaphone,
-  ShieldAlert
+  ShieldAlert,
+  ListChecks,
+  PhoneForwarded
 } from 'lucide-react';
 import { useData } from '../DataContext';
 import { TabType, AppUser, Collector } from '../types';
@@ -315,6 +317,17 @@ const Sidebar: React.FC<SidebarProps> = ({
               isActive={activeTab === 'projection'} 
               isCollapsed={isCollapsed}
               onClick={() => onResetToMainTab('projection')} 
+            />
+          )}
+          
+          {/* 6.1 Disposition */}
+          {permissions.viewDisposition && (
+            <NavItem 
+              icon={PhoneForwarded} 
+              label="Disposition" 
+              isActive={activeTab === 'disposition'} 
+              isCollapsed={isCollapsed}
+              onClick={() => onResetToMainTab('disposition')} 
             />
           )}
 

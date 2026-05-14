@@ -15,6 +15,7 @@ import MirrorDashboard from './components/MirrorDashboard';
 import InventoryDashboard from './components/InventoryDashboard';
 import CampaignDashboard from './components/CampaignDashboard';
 import RPCLogsDashboard from './components/RPCLogsDashboard';
+import DispositionDashboard from './components/DispositionDashboard';
 import UserSettings from './components/UserSettings';
 import MonthlyCollectionsHistory from './components/MonthlyCollectionsHistory';
 import CompanyRevenue from './components/CompanyRevenue';
@@ -365,6 +366,8 @@ export default function App() {
         return <PostdatesView canManageDocuments={currentUser.permissions.manageDocuments} currentUser={currentUser} onNavigate={resetToMainTab} />;
       case 'projection':
         return <ProjectionDashboard />;
+      case 'disposition':
+        return <DispositionDashboard onBack={() => resetToMainTab('home')} currentUser={currentUser} />;
       case 'mirror':
         return <MirrorDashboard currentUser={currentUser} />;
       case 'rpc-logs':

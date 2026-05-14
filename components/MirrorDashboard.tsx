@@ -282,7 +282,7 @@ const MirrorDashboard: React.FC<MirrorDashboardProps> = ({ currentUser }) => {
       outbound: agent.outboundCalls,
       inbound: agent.inboundCalls,
       missed: agent.missedCalls,
-      duration: parseDurationToMinutes(agent.callDuration)
+      totalDuration: parseDurationToMinutes(agent.totalCallTime)
     }));
   }, [currentStats]);
 
@@ -471,14 +471,14 @@ const MirrorDashboard: React.FC<MirrorDashboardProps> = ({ currentUser }) => {
                   <Tooltip 
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)' }}
                     labelStyle={{ color: '#1e293b', fontWeight: 'bold', marginBottom: '8px' }}
-                    formatter={(value: number, name: string) => name === 'Avg Call Time (mins)' ? [`${value.toFixed(1)} mins`, name] : [value, name]}
+                    formatter={(value: number, name: string) => name === 'Total Call Time (mins)' ? [`${value.toFixed(1)} mins`, name] : [value, name]}
                   />
                   <Legend wrapperStyle={{ paddingTop: '20px' }} />
                   <Bar yAxisId="left" dataKey="worked" name="Accounts Worked" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} />
                   <Bar yAxisId="left" dataKey="outbound" name="Outbound Calls" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={20} />
                   <Bar yAxisId="left" dataKey="inbound" name="Inbound Calls" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} />
                   <Bar yAxisId="left" dataKey="missed" name="Missed Calls" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={20} />
-                  <Bar yAxisId="right" dataKey="duration" name="Avg Call Time (mins)" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={20} />
+                  <Bar yAxisId="right" dataKey="totalDuration" name="Total Call Time (mins)" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={20} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
