@@ -126,24 +126,132 @@ const KPIDashboard: React.FC = () => {
     fetchKpi();
   }, [fetchKpi]);
 
-  const sortedData = useMemo(() => {
-    const sourceData = (kpi.data.length > 0 && !kpi.isLoading) ? kpi.data : COLLECTORS.map(c => getMockData(c.name));
+  const normalizedData = useMemo(() => {
+    const raw = (kpi.data.length > 0 && !kpi.isLoading) ? kpi.data : COLLECTORS.map(c => getMockData(c.name));
     
-    let sorted = [...sourceData];
+    const parseVal = (val: any, isDuration = false) => {
+      if (typeof val === 'number') return val;
+      if (typeof val === 'string') {
+        if (isDuration && val.includes(':')) {
+          const parts = val.split(':').map(Number);
+          if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+        }
+        const num = parseFloat(val.replace(/[^0-9.-]+/g, ""));
+        return isNaN(num) ? 0 : num;
+      }
+      return 0;
+    };
+
+    return raw.map((d: any) => ({
+      ...d,
+      _parsed: {
+        collection: {
+          daily: { 
+            collected: parseVal(d.collection?.daily?.collected), 
+            target: parseVal(d.collection?.daily?.target), 
+            variance: parseVal(d.collection?.daily?.variance) 
+          },
+          weekly: { 
+            collected: parseVal(d.collection?.weekly?.collected), 
+            target: parseVal(d.collection?.weekly?.target), 
+            variance: parseVal(d.collection?.weekly?.variance) 
+          },
+          monthly: { 
+            collected: parseVal(d.collection?.monthly?.collected), 
+            target: parseVal(d.collection?.monthly?.target), 
+            variance: parseVal(d.collection?.monthly?.variance) 
+          },
+          payments: { 
+            count: parseVal(d.collection?.payments?.count), 
+            average: parseVal(d.collection?.payments?.average) 
+          }
+        },
+        performance: {
+          overview: { 
+            assigned: parseVal(d.performance?.overview?.assigned), 
+            inactivated: parseVal(d.performance?.overview?.inactivated) 
+          },
+          daily: { 
+            worked: parseVal(d.performance?.daily?.worked), 
+            outbound: parseVal(d.performance?.daily?.outbound), 
+            inbound: parseVal(d.performance?.daily?.inbound), 
+            missed: parseVal(d.performance?.daily?.missed), 
+            duration: parseVal(d.performance?.daily?.duration, true) 
+          },
+          weekly: { 
+            worked: parseVal(d.performance?.weekly?.worked), 
+            outbound: parseVal(d.performance?.weekly?.outbound), 
+            inbound: parseVal(d.performance?.weekly?.inbound), 
+            missed: parseVal(d.performance?.weekly?.missed), 
+            duration: parseVal(d.performance?.weekly?.duration, true) 
+          },
+          monthly: { 
+            worked: parseVal(d.performance?.monthly?.worked), 
+            outbound: parseVal(d.performance?.monthly?.outbound), 
+            inbound: parseVal(d.performance?.monthly?.inbound), 
+            missed: parseVal(d.performance?.monthly?.missed), 
+            duration: parseVal(d.performance?.monthly?.duration, true) 
+          }
+        },
+        postdates: {
+          daily: {
+            succeeded: parseVal(d.postdates?.daily?.succeeded),
+            declined: parseVal(d.postdates?.daily?.declined),
+            processed: parseVal(d.postdates?.daily?.processed)
+          },
+          weekly: {
+            succeeded: parseVal(d.postdates?.weekly?.succeeded),
+            declined: parseVal(d.postdates?.weekly?.declined),
+            recovered: parseVal(d.postdates?.weekly?.recovered),
+            processed: parseVal(d.postdates?.weekly?.processed)
+          },
+          monthly: {
+            succeeded: parseVal(d.postdates?.monthly?.succeeded),
+            declined: parseVal(d.postdates?.monthly?.declined),
+            recovered: parseVal(d.postdates?.monthly?.recovered),
+            processed: parseVal(d.postdates?.monthly?.processed)
+          },
+          remaining: {
+            monthly: parseVal(d.postdates?.remaining?.monthly),
+            nextWeek: parseVal(d.postdates?.remaining?.nextWeek)
+          }
+        }
+      }
+    }));
+  }, [kpi.data, kpi.isLoading]);
+
+  const sortedData = useMemo(() => {
+    let sorted = [...normalizedData];
     
     if (sortConfig) {
       sorted.sort((a, b) => {
         const keys = sortConfig.key.split('.');
+        
+        // If sorting directly on original nested object, map it to our _parsed object for numeric sorting
         let valA = a;
         let valB = b;
         
-        for (const key of keys) {
-          valA = valA?.[key];
-          valB = valB?.[key];
-        }
+        let parsedA = a._parsed;
+        let parsedB = b._parsed;
 
-        // Handle string numbers with currency/percentages
-        if (typeof valA === 'string' && typeof valB === 'string') {
+        let useParsed = true;
+
+        for (const key of keys) {
+          if (valA && key in valA && valA[key] !== undefined && !['collection', 'performance', 'postdates'].includes(keys[0])) {
+             valA = valA[key];
+             valB = valB[key];
+             useParsed = false;
+          } else if (useParsed && parsedA && key in parsedA) {
+             parsedA = parsedA[key];
+             parsedB = parsedB[key];
+          }
+        }
+        
+        if (useParsed && keys.length > 1) {
+           valA = parsedA;
+           valB = parsedB;
+        } else if (typeof valA === 'string' && typeof valB === 'string') {
+          // Fallback string manipulation just in case we didn't map it properly to _parsed
           const numA = parseFloat(valA.replace(/[^0-9.-]+/g, ""));
           const numB = parseFloat(valB.replace(/[^0-9.-]+/g, ""));
           if (!isNaN(numA) && !isNaN(numB)) {
@@ -175,76 +283,47 @@ const KPIDashboard: React.FC = () => {
     bottomStats.sort((a, b) => (a.collectorName || '').localeCompare(b.collectorName || ''));
 
     return [...regularStats, ...bottomStats];
-  }, [kpi.data, kpi.isLoading, sortConfig]);
+  }, [normalizedData, sortConfig]);
 
   const collectionSummary = useMemo(() => {
     let daily = 0, weekly = 0, monthly = 0, payments = 0, totalAverage = 0;
-    const data = (kpi.data.length > 0 && !kpi.isLoading) ? kpi.data : COLLECTORS.map(c => getMockData(c.name));
-    data.forEach((d: any) => {
-      const dCol = typeof d.collection.daily.collected === 'string' ? parseFloat(d.collection.daily.collected.replace(/[^0-9.-]+/g, "")) : d.collection.daily.collected;
-      const wCol = typeof d.collection.weekly.collected === 'string' ? parseFloat(d.collection.weekly.collected.replace(/[^0-9.-]+/g, "")) : d.collection.weekly.collected;
-      const mCol = typeof d.collection.monthly.collected === 'string' ? parseFloat(d.collection.monthly.collected.replace(/[^0-9.-]+/g, "")) : d.collection.monthly.collected;
-      const pCount = typeof d.collection.payments.count === 'string' ? parseFloat(d.collection.payments.count.replace(/[^0-9.-]+/g, "")) : d.collection.payments.count;
-      
-      if (!isNaN(dCol)) daily += dCol;
-      if (!isNaN(wCol)) weekly += wCol;
-      if (!isNaN(mCol)) monthly += mCol;
-      if (!isNaN(pCount)) payments += pCount;
+    normalizedData.forEach((d: any) => {
+      daily += d._parsed.collection.daily.collected;
+      weekly += d._parsed.collection.weekly.collected;
+      monthly += d._parsed.collection.monthly.collected;
+      payments += d._parsed.collection.payments.count;
     });
     totalAverage = payments > 0 ? monthly / payments : 0;
     return { daily, weekly, monthly, payments, totalAverage };
-  }, [kpi.data, kpi.isLoading]);
+  }, [normalizedData]);
 
   const performanceSummary = useMemo(() => {
     let worked = 0, outbound = 0, inbound = 0, missed = 0, duration = 0;
-    const data = (kpi.data.length > 0 && !kpi.isLoading) ? kpi.data : COLLECTORS.map(c => getMockData(c.name));
-    data.forEach((d: any) => {
-      const pData = d.performance.monthly;
-      const w = typeof pData.worked === 'string' ? parseFloat(pData.worked.replace(/[^0-9.-]+/g, "")) : pData.worked;
-      const o = typeof pData.outbound === 'string' ? parseFloat(pData.outbound.replace(/[^0-9.-]+/g, "")) : pData.outbound;
-      const i = typeof pData.inbound === 'string' ? parseFloat(pData.inbound.replace(/[^0-9.-]+/g, "")) : pData.inbound;
-      const m = typeof pData.missed === 'string' ? parseFloat(pData.missed.replace(/[^0-9.-]+/g, "")) : pData.missed;
-      
-      let dur = 0;
-      if (typeof pData.duration === 'string' && pData.duration.includes(':')) {
-         const parts = pData.duration.split(':').map(Number);
-         if (parts.length === 3) dur = parts[0] * 3600 + parts[1] * 60 + parts[2]; // in seconds
-      } else {
-         const rawDur = typeof pData.duration === 'string' ? parseFloat(pData.duration.replace(/[^0-9.-]+/g, "")) : pData.duration;
-         dur = isNaN(rawDur) ? 0 : rawDur;
-      }
-
-      if (!isNaN(w)) worked += w;
-      if (!isNaN(o)) outbound += o;
-      if (!isNaN(i)) inbound += i;
-      if (!isNaN(m)) missed += m;
-      duration += dur;
+    normalizedData.forEach((d: any) => {
+      const pData = d._parsed.performance.monthly;
+      worked += pData.worked;
+      outbound += pData.outbound;
+      inbound += pData.inbound;
+      missed += pData.missed;
+      duration += pData.duration;
     });
     return { worked, outbound, inbound, missed, duration };
-  }, [kpi.data, kpi.isLoading]);
+  }, [normalizedData]);
 
   const postdatesSummary = useMemo(() => {
     let succeeded = 0, declined = 0, recovered = 0, processed = 0, remainingMonthly = 0, nextWeek = 0;
-    const data = (kpi.data.length > 0 && !kpi.isLoading) ? kpi.data : COLLECTORS.map(c => getMockData(c.name));
-    data.forEach((d: any) => {
-      const pData = d.postdates.monthly;
-      const rData = d.postdates.remaining;
-      const s = typeof pData.succeeded === 'string' ? parseFloat(pData.succeeded.replace(/[^0-9.-]+/g, "")) : pData.succeeded;
-      const dec = typeof pData.declined === 'string' ? parseFloat(pData.declined.replace(/[^0-9.-]+/g, "")) : pData.declined;
-      const r = typeof pData.recovered === 'string' ? parseFloat(pData.recovered.replace(/[^0-9.-]+/g, "")) : pData.recovered;
-      const p = typeof pData.processed === 'string' ? parseFloat(pData.processed.replace(/[^0-9.-]+/g, "")) : pData.processed;
-      const rm = typeof rData.monthly === 'string' ? parseFloat(rData.monthly.replace(/[^0-9.-]+/g, "")) : rData.monthly;
-      const nw = typeof rData.nextWeek === 'string' ? parseFloat(rData.nextWeek.replace(/[^0-9.-]+/g, "")) : rData.nextWeek;
-
-      if (!isNaN(s)) succeeded += s;
-      if (!isNaN(dec)) declined += dec;
-      if (!isNaN(r)) recovered += r;
-      if (!isNaN(p)) processed += p;
-      if (!isNaN(rm)) remainingMonthly += rm;
-      if (!isNaN(nw)) nextWeek += nw;
+    normalizedData.forEach((d: any) => {
+      const pData = d._parsed.postdates.monthly;
+      const rData = d._parsed.postdates.remaining;
+      succeeded += pData.succeeded;
+      declined += pData.declined;
+      recovered += pData.recovered;
+      processed += pData.processed;
+      remainingMonthly += rData.monthly;
+      nextWeek += rData.nextWeek;
     });
     return { succeeded, declined, recovered, processed, remainingMonthly, nextWeek };
-  }, [kpi.data, kpi.isLoading]);
+  }, [normalizedData]);
 
   const SummaryCard = ({ label, value, icon: Icon, colorClass }: any) => (
     <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-4">
@@ -259,50 +338,31 @@ const KPIDashboard: React.FC = () => {
   );
 
   const collectionChartData = useMemo(() => {
-    const sourceData = (kpi.data.length > 0 && !kpi.isLoading) ? kpi.data : COLLECTORS.map(c => getMockData(c.name));
-    return sourceData.map((d: any) => {
-      const periodData = d.collection[collectionTimeframe];
-      const collected = typeof periodData.collected === 'string' ? parseFloat(periodData.collected.replace(/[^0-9.-]+/g, "")) : periodData.collected;
-      const target = typeof periodData.target === 'string' ? parseFloat(periodData.target.replace(/[^0-9.-]+/g, "")) : periodData.target;
-      
+    return normalizedData.map((d: any) => {
+      const periodData = d._parsed.collection[collectionTimeframe];
       return {
         name: d.collectorName.split(' ')[0], // Use first name for brevity on axis
         fullName: d.collectorName,
-        collected: isNaN(collected) ? 0 : collected,
-        target: isNaN(target) ? 0 : target,
+        collected: periodData.collected,
+        target: periodData.target,
       };
     });
-  }, [kpi.data, kpi.isLoading, collectionTimeframe]);
+  }, [normalizedData, collectionTimeframe]);
 
   const performanceChartData = useMemo(() => {
-    const sourceData = (kpi.data.length > 0 && !kpi.isLoading) ? kpi.data : COLLECTORS.map(c => getMockData(c.name));
-    return sourceData.map((d: any) => {
-      const periodData = d.performance[performanceTimeframe];
-      const worked = typeof periodData.worked === 'string' ? parseFloat(periodData.worked.replace(/[^0-9.-]+/g, "")) : periodData.worked;
-      const outbound = typeof periodData.outbound === 'string' ? parseFloat(periodData.outbound.replace(/[^0-9.-]+/g, "")) : periodData.outbound;
-      const inbound = typeof periodData.inbound === 'string' ? parseFloat(periodData.inbound.replace(/[^0-9.-]+/g, "")) : periodData.inbound;
-      const missed = typeof periodData.missed === 'string' ? parseFloat(periodData.missed.replace(/[^0-9.-]+/g, "")) : periodData.missed;
-      
-      let durationNum = 0;
-      if (typeof periodData.duration === 'string' && periodData.duration.includes(':')) {
-         const parts = periodData.duration.split(':').map(Number);
-         if (parts.length === 3) durationNum = parts[0] * 60 + parts[1] + parts[2] / 60; // in minutes
-      } else {
-         const rawDur = typeof periodData.duration === 'string' ? parseFloat(periodData.duration.replace(/[^0-9.-]+/g, "")) : periodData.duration;
-         durationNum = isNaN(rawDur) ? 0 : rawDur / 60; // assuming raw is seconds, convert to minutes
-      }
-      
+    return normalizedData.map((d: any) => {
+      const periodData = d._parsed.performance[performanceTimeframe];
       return {
         name: d.collectorName.split(' ')[0],
         fullName: d.collectorName,
-        worked: isNaN(worked) ? 0 : worked,
-        outbound: isNaN(outbound) ? 0 : outbound,
-        inbound: isNaN(inbound) ? 0 : inbound,
-        missed: isNaN(missed) ? 0 : missed,
-        duration: durationNum,
+        worked: periodData.worked,
+        outbound: periodData.outbound,
+        inbound: periodData.inbound,
+        missed: periodData.missed,
+        duration: periodData.duration / 60, // convert seconds to minutes for chart
       };
     });
-  }, [kpi.data, kpi.isLoading, performanceTimeframe]);
+  }, [normalizedData, performanceTimeframe]);
 
   const TimeframeToggle = ({ value, onChange }: { value: string, onChange: (v: any) => void }) => (
     <div className="flex bg-slate-100 dark:bg-slate-700/50 p-1 rounded-lg">

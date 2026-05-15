@@ -84,6 +84,9 @@ export const UNACTIVATED_ACCOUNTS_SCRIPT_URL: string = getValidUrl(import.meta.e
 // SMS Campaign Script URL
 export const SMS_CAMPAIGN_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_SMS_CAMPAIGN_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbya9z6sG_e2ibTT9e_ejxT-mA73I3uFmrdahe9U58tatAwpV8Ar_qv1ZrUpX0ZbE3PJ/exec");
 
+// Third Party Campaign Script URL
+export const THIRD_PARTY_CAMPAIGN_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_THIRD_PARTY_CAMPAIGN_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbw2ZPGbGTJf1P2FdXMeGeX2VRF0ZSJKWhle9NumZI8gDzDl8wU3QyrYYFzb6aHJQUm03Q/exec");
+
 export const COLLECTORS: Collector[] = [
   { id: 'c8', name: 'Arianne Sanchez', status: 'online', rank: 10 },
   { id: 'c9', name: 'Charles Phillips', status: 'offline', rank: 11 },

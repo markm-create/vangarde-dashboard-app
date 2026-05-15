@@ -9,17 +9,19 @@ import {
   ChevronRight,
   Megaphone,
   Bell,
-  Send
+  Send,
+  Users
 } from 'lucide-react';
 import InitialCampaignView from './InitialCampaignView';
 import SmsCampaignView from './SmsCampaignView';
+import ThirdPartyNoticeCampaignView from './ThirdPartyNoticeCampaignView';
 
 interface CampaignDashboardProps {
   onBack?: () => void;
   initialView?: CampaignView;
 }
 
-type CampaignView = 'menu' | 'initial' | 'sms';
+type CampaignView = 'menu' | 'initial' | 'sms' | 'third-party';
 
 const CampaignDashboard: React.FC<CampaignDashboardProps> = ({ onBack, initialView = 'menu' }) => {
   const [view, setView] = useState<CampaignView>(initialView);
@@ -63,6 +65,15 @@ const CampaignDashboard: React.FC<CampaignDashboardProps> = ({ onBack, initialVi
       color: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400',
       borderColor: 'border-emerald-100 dark:border-emerald-800',
       iconBg: 'bg-emerald-100 dark:bg-emerald-800/50'
+    },
+    {
+      id: 'third-party',
+      title: 'Third Party Notice',
+      subtitle: 'Letter Campaigns to Third Parties',
+      icon: Users,
+      color: 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
+      borderColor: 'border-amber-100 dark:border-amber-800',
+      iconBg: 'bg-amber-100 dark:bg-amber-800/50'
     }
   ];
 
@@ -77,6 +88,14 @@ const CampaignDashboard: React.FC<CampaignDashboardProps> = ({ onBack, initialVi
   if (view === 'sms') {
     return (
       <SmsCampaignView 
+        onBack={handleSubviewBack} 
+      />
+    );
+  }
+
+  if (view === 'third-party') {
+    return (
+      <ThirdPartyNoticeCampaignView 
         onBack={handleSubviewBack} 
       />
     );
@@ -102,7 +121,7 @@ const CampaignDashboard: React.FC<CampaignDashboardProps> = ({ onBack, initialVi
         
         <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 rounded-xl">
           <Megaphone size={16} className="text-indigo-600 dark:text-indigo-400" />
-          <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">2 Active Channels</span>
+          <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">3 Active Channels</span>
         </div>
       </div>
 
