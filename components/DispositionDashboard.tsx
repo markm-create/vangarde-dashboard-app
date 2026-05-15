@@ -137,27 +137,29 @@ const DispositionDashboard: React.FC<DispositionDashboardProps> = ({ onBack, cur
     let totalPayments = 0;
 
     const rpcTypes = [
-      'Talked to PG', 
-      'RPC - Paid in Full', 
-      'RPC - Dispute', 
-      'RPC - Settle in Full', 
-      'Secured Payment', 
-      'Promise to Pay', 
-      'Talked to Debt Cons.', 
-      'Talked to ATTY'
+      'talked to pg', 
+      'rpc - paid in full', 
+      'rpc - dispute', 
+      'rpc - settle in full', 
+      'secured payment', 
+      'promise to pay', 
+      'talked to debt cons.', 
+      'talked to atty'
     ];
-    const tpcTypes = ['Talked to 3rd Party'];
-    const paymentTypes = ['RPC - Paid in Full', 'RPC - Settle in Full', 'Secured Payment'];
+    const tpcTypes = ['talked to 3rd party'];
+    const paymentTypes = ['rpc - paid in full', 'rpc - settle in full', 'secured payment'];
 
     filteredRawData.forEach(row => {
       totalDispositions += row.count;
-      if (rpcTypes.includes(row.description)) {
+      const descLower = row.description.toLowerCase();
+      
+      if (rpcTypes.includes(descLower)) {
         totalRpc += row.count;
       }
-      if (tpcTypes.includes(row.description)) {
+      if (tpcTypes.includes(descLower)) {
         totalTpc += row.count;
       }
-      if (paymentTypes.includes(row.description)) {
+      if (paymentTypes.includes(descLower)) {
         totalPayments += row.count;
       }
     });
@@ -187,10 +189,10 @@ const DispositionDashboard: React.FC<DispositionDashboardProps> = ({ onBack, cur
       return acc;
     }, {} as Record<string, { name: string, total: number, dispositionsMap: Record<string, number> }>);
 
-    return Object.values(groupedData).map(collector => ({
+    return Object.values(groupedData).map((collector: any) => ({
       name: collector.name,
       total: collector.total,
-      dispositions: Object.entries(collector.dispositionsMap).map(([type, count]) => ({
+      dispositions: Object.entries(collector.dispositionsMap as Record<string, number>).map(([type, count]) => ({
         type,
         count
       })).sort((a, b) => b.count - a.count)
