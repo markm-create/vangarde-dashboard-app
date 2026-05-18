@@ -41,8 +41,11 @@ interface CollectorSummary {
 const DispositionDashboard: React.FC<DispositionDashboardProps> = ({ onBack, currentUser }) => {
   const [filterText, setFilterText] = useState('');
   const [isAllExpanded, setIsAllExpanded] = useState(false);
-  const [rawData, setRawData] = useState<RawDisposition[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [rawData, setRawData] = useState<RawDisposition[]>(() => {
+    const cached = localStorage.getItem('vg_dispositionData');
+    return cached ? JSON.parse(cached) : [];
+  });
+  const [isLoading, setIsLoading] = useState(() => !localStorage.getItem('vg_dispositionData'));
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<string>(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
 
@@ -90,31 +93,42 @@ const DispositionDashboard: React.FC<DispositionDashboardProps> = ({ onBack, cur
     setDateRange(prev => ({ ...prev, end: newDate }));
   };
 
-  const fetchData = async () => {
+  const fetchData = async (silent = false) => {
     const scriptUrl = import.meta.env.VITE_CALL_DISPOSITION_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwqyINOeJnJrtmTxHC6FpFZe-037X39Lk7Cplz4Ljj9ak_lJohkzsk7TnhJ5ZHrfe5e/exec';
     if (!scriptUrl) {
       setError('Script URL not configured');
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
       return;
     }
 
     try {
-      setIsLoading(true);
+      if (!silent) setIsLoading(true);
       setError(null);
-      const response = await fetch(scriptUrl);
+      const url = new URL(scriptUrl);
+      url.searchParams.set('t', Date.now().toString());
+
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        cache: 'no-store',
+        credentials: 'omit',
+        redirect: 'follow'
+      });
       const rawRes: RawDisposition[] = await response.json();
       setRawData(rawRes);
+      localStorage.setItem('vg_dispositionData', JSON.stringify(rawRes));
       setLastUpdated(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
     } catch (err) {
       console.error('Error fetching dispositions:', err);
-      setError('Failed to load data from sheet. Please check the Web App URL.');
+      if (rawData.length === 0) {
+        setError('Failed to load data from sheet. Please check the Web App URL.');
+      }
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
+    fetchData(rawData.length > 0);
   }, []);
 
   const filteredRawData = useMemo(() => {
