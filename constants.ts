@@ -1,105 +1,185 @@
-import { Collector, AppPermissions, AppUser } from './types';
+import { Collector, AppPermissions, AppUser } from "./types";
 
-const getValidUrl = (envUrl: string | undefined | boolean, fallbackUrl: string): string => {
-  if (typeof envUrl === 'string') {
+const getValidUrl = (
+  envUrl: string | undefined | boolean,
+  fallbackUrl: string,
+): string => {
+  if (typeof envUrl === "string") {
     const trimmed = envUrl.trim();
-    if (trimmed.startsWith('http')) {
+    if (trimmed.startsWith("http")) {
       return trimmed;
     }
   }
   return fallbackUrl;
 };
 
-export const RPC_SCRIPT_URL = getValidUrl(import.meta.env.VITE_RPC_LOGS_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbxdx_fYfnH1C5fXfeJU00ccjoQXLp1W4Wn3SqKJJbHcpgW46V9rl85BA2RPw9LeGfLGQg/exec");
-export const REMINDERS_SCRIPT_URL = getValidUrl(import.meta.env.VITE_REMINDERS_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbxdwxYx9SgqSu8_IJceIZO28ohsyo92clegGIL_a-qjFvbHnPhCOeu-AHsotF-1PCaF/exec");
-export const POSTDATES_SCRIPT_URL = getValidUrl(import.meta.env.VITE_POSTDATES_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbw1KZjg2vsOzroiYt6wgCg1y93yJK58MUkaZ6Aj8svMWvRNYzS40VKdNQhedsP-62DP/exec");
-export const USER_SCRIPT_URL = getValidUrl(import.meta.env.VITE_USER_LOGIN_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbxT86FxniOBtG3kMZvugCSThMApwSnmXeUOtCSNmzfX7G1SLuQ9PjetGUy8IAaHsUP-2w/exec");
-export const PROJECTION_SCRIPT_URL = getValidUrl(import.meta.env.VITE_PROJECTION_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbyH8AGvP_vYcVXh_-JTYrfFFUg2-wPqHUf7VlDRKruRmkFPiECM-zkST-RLCejB8djh/exec");
-export const DECLINE_RECOVERY_SCRIPT_URL = getValidUrl(import.meta.env.VITE_DECLINE_RECOVERY_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbyqpiFO_lGT41RMQWzXJp1kU5ZOFDjzfB51rbIhe5uqZOigrQlATR4asqwaZ6aIleSYXg/exec");
+export const RPC_SCRIPT_URL = getValidUrl(
+  import.meta.env.VITE_RPC_LOGS_SCRIPT_URL,
+  "https://script.google.com/macros/s/AKfycbxdx_fYfnH1C5fXfeJU00ccjoQXLp1W4Wn3SqKJJbHcpgW46V9rl85BA2RPw9LeGfLGQg/exec",
+);
+export const REMINDERS_SCRIPT_URL = getValidUrl(
+  import.meta.env.VITE_REMINDERS_SCRIPT_URL,
+  "https://script.google.com/macros/s/AKfycbxdwxYx9SgqSu8_IJceIZO28ohsyo92clegGIL_a-qjFvbHnPhCOeu-AHsotF-1PCaF/exec",
+);
+export const POSTDATES_SCRIPT_URL = getValidUrl(
+  import.meta.env.VITE_POSTDATES_SCRIPT_URL,
+  "https://script.google.com/macros/s/AKfycbw1KZjg2vsOzroiYt6wgCg1y93yJK58MUkaZ6Aj8svMWvRNYzS40VKdNQhedsP-62DP/exec",
+);
+export const USER_SCRIPT_URL = getValidUrl(
+  import.meta.env.VITE_USER_LOGIN_SCRIPT_URL,
+  "https://script.google.com/macros/s/AKfycbxT86FxniOBtG3kMZvugCSThMApwSnmXeUOtCSNmzfX7G1SLuQ9PjetGUy8IAaHsUP-2w/exec",
+);
+export const PROJECTION_SCRIPT_URL = getValidUrl(
+  import.meta.env.VITE_PROJECTION_SCRIPT_URL,
+  "https://script.google.com/macros/s/AKfycbyH8AGvP_vYcVXh_-JTYrfFFUg2-wPqHUf7VlDRKruRmkFPiECM-zkST-RLCejB8djh/exec",
+);
+export const DECLINE_RECOVERY_SCRIPT_URL = getValidUrl(
+  import.meta.env.VITE_DECLINE_RECOVERY_SCRIPT_URL,
+  "https://script.google.com/macros/s/AKfycbyqpiFO_lGT41RMQWzXJp1kU5ZOFDjzfB51rbIhe5uqZOigrQlATR4asqwaZ6aIleSYXg/exec",
+);
 
 // Executive Dashboard Script URL (Isolated from other services)
 // Forcing the new URL to bypass any stale environment variables
-export const EXECUTIVE_SCRIPT_URL = getValidUrl(import.meta.env.VITE_EXECUTIVE_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbyiZuQII5LaQm69YzZ25blOVQU7ki1Pqbl_CkUWTf5j8R9oMReGlNntP0vymAeDRhrQJA/exec");
+export const EXECUTIVE_SCRIPT_URL = getValidUrl(
+  import.meta.env.VITE_EXECUTIVE_SCRIPT_URL,
+  "https://script.google.com/macros/s/AKfycbyiZuQII5LaQm69YzZ25blOVQU7ki1Pqbl_CkUWTf5j8R9oMReGlNntP0vymAeDRhrQJA/exec",
+);
 
 // Home Dashboard Script URL (Isolated from Executive)
-export const HOME_SCRIPT_URL = getValidUrl(import.meta.env.VITE_HOME_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbzItlApZGUH_5sp27xauWfzKfrO0DwmuS_PHCQfmYMRBoUVt2KCXyJefVjseXoei3eW/exec");
+export const HOME_SCRIPT_URL = getValidUrl(
+  import.meta.env.VITE_HOME_SCRIPT_URL,
+  "https://script.google.com/macros/s/AKfycbzItlApZGUH_5sp27xauWfzKfrO0DwmuS_PHCQfmYMRBoUVt2KCXyJefVjseXoei3eW/exec",
+);
 
 // Collector Performance Script URL
-export const COLLECTOR_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_COLLECTOR_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbztWl_oMqMewV2Pa4AHrUcxcI6QwEXLj4-myvoh6cKSXL5o_5Xp6XdPT1yxq-FUAFak8A/exec"); 
+export const COLLECTOR_SCRIPT_URL: string =
+  "https://script.google.com/macros/s/AKfycbztWl_oMqMewV2Pa4AHrUcxcI6QwEXLj4-myvoh6cKSXL5o_5Xp6XdPT1yxq-FUAFak8A/exec";
 
 // Mirror Dashboard Script URL
-export const MIRROR_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_MIRROR_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbxSgWvPkZ1jwtgyirMdA9BB7FbefIRDrl0qPfctICoYho5xUCVUBVT07k3pjuMMO-YV8w/exec");
+export const MIRROR_SCRIPT_URL: string = getValidUrl(
+  import.meta.env.VITE_MIRROR_SCRIPT_URL,
+  "https://script.google.com/macros/s/AKfycbxSgWvPkZ1jwtgyirMdA9BB7FbefIRDrl0qPfctICoYho5xUCVUBVT07k3pjuMMO-YV8w/exec",
+);
 
 // Call Performance Script URL
-export const CALL_PERFORMANCE_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_CALL_PERFORMANCE_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbz4fW8c9mXuOR_n54z3yctPJJeDpOgbxT_k0ZdNzUHuur_U36vVIDJyWElEpR0m5ssNUw/exec");
+export const CALL_PERFORMANCE_SCRIPT_URL: string =
+  "https://script.google.com/macros/s/AKfycbz4fW8c9mXuOR_n54z3yctPJJeDpOgbxT_k0ZdNzUHuur_U36vVIDJyWElEpR0m5ssNUw/exec";
 
 // New Imports Script URL
-export const NEW_IMPORTS_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_NEW_IMPORTS_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbzSbw-BkOIOjcH0aYfmm9VuQlWs31tawoAOCxRdFSgBrl1ZmAtnOBOGlmu72wU2zJit/exec");
+export const NEW_IMPORTS_SCRIPT_URL: string = getValidUrl(
+  import.meta.env.VITE_NEW_IMPORTS_SCRIPT_URL,
+  "https://script.google.com/macros/s/AKfycbzSbw-BkOIOjcH0aYfmm9VuQlWs31tawoAOCxRdFSgBrl1ZmAtnOBOGlmu72wU2zJit/exec",
+);
 
 // Overdue Payments Script URL
-export const OVERDUE_PAYMENTS_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_OVERDUE_PAYMENTS_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbwlQQdBpbrjopy3t_V-6_TR5ZUJmkIEis-pSQR9aXY_RH3AKxGRJ_Rs9_7m9jvN2AOodg/exec");
+export const OVERDUE_PAYMENTS_SCRIPT_URL: string = getValidUrl(
+  import.meta.env.VITE_OVERDUE_PAYMENTS_SCRIPT_URL,
+  "https://script.google.com/macros/s/AKfycbwlQQdBpbrjopy3t_V-6_TR5ZUJmkIEis-pSQR9aXY_RH3AKxGRJ_Rs9_7m9jvN2AOodg/exec",
+);
 
 // Flagged Accounts Script URL
-export const FLAGGED_ACCOUNTS_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_FLAGGED_ACCOUNTS_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbwpokhNgAqQYtUbFahqgzaVqkV8v01kefgNR8N-YviIbN58ZGOmA1XLPr42BjLKIUti/exec");
+export const FLAGGED_ACCOUNTS_SCRIPT_URL: string = getValidUrl(
+  import.meta.env.VITE_FLAGGED_ACCOUNTS_SCRIPT_URL,
+  "https://script.google.com/macros/s/AKfycbwpokhNgAqQYtUbFahqgzaVqkV8v01kefgNR8N-YviIbN58ZGOmA1XLPr42BjLKIUti/exec",
+);
 
 // Individual Collector Dashboard Script URL
-export const INDIVIDUAL_COLLECTOR_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_INDIVIDUAL_COLLECTOR_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbxhqTDXus5QKO93d1rrXVQf7K9S8Y3EFH9wv-UkK-vNgRE2IMGSxeufEk6ftbQSJpYL/exec");
+export const INDIVIDUAL_COLLECTOR_SCRIPT_URL: string =
+  "https://script.google.com/macros/s/AKfycbxhqTDXus5QKO93d1rrXVQf7K9S8Y3EFH9wv-UkK-vNgRE2IMGSxeufEk6ftbQSJpYL/exec";
 
 // New Assigned Accounts Script URL
-export const NEW_ASSIGNED_ACCOUNTS_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_NEW_ASSIGNED_ACCOUNTS_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbyEZlZ-SF04ZLWV3Gbl2mL9JH1Ikb9a7X8HqKYYXPlbrxBdmI0EbOGPD-7sPeOsOLU4/exec");
+export const NEW_ASSIGNED_ACCOUNTS_SCRIPT_URL: string = getValidUrl(
+  import.meta.env.VITE_NEW_ASSIGNED_ACCOUNTS_SCRIPT_URL,
+  "https://script.google.com/macros/s/AKfycbyEZlZ-SF04ZLWV3Gbl2mL9JH1Ikb9a7X8HqKYYXPlbrxBdmI0EbOGPD-7sPeOsOLU4/exec",
+);
 
 // Collector Home Page Script URL
-export const COLLECTOR_HOME_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_COLLECTOR_HOME_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbxYiHl5bEpVL8D67jFfHI4rcbdIOSamHFtqsR8tZ4AfKyE8ri_HGIM7WZUhKdrzlEfB3w/exec");
+export const COLLECTOR_HOME_SCRIPT_URL: string = getValidUrl(
+  import.meta.env.VITE_COLLECTOR_HOME_SCRIPT_URL,
+  "https://script.google.com/macros/s/AKfycbxYiHl5bEpVL8D67jFfHI4rcbdIOSamHFtqsR8tZ4AfKyE8ri_HGIM7WZUhKdrzlEfB3w/exec",
+);
 
 // Inventory Script URL
-export const INVENTORY_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_INVENTORY_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbxXhkebI88ismWX4nSGPmF7mDFzLTRsi1URr13sHXxsB3n0qfGetwwro6HGf0xbj5cePQ/exec");
+export const INVENTORY_SCRIPT_URL: string = getValidUrl(
+  import.meta.env.VITE_INVENTORY_SCRIPT_URL,
+  "https://script.google.com/macros/s/AKfycbxXhkebI88ismWX4nSGPmF7mDFzLTRsi1URr13sHXxsB3n0qfGetwwro6HGf0xbj5cePQ/exec",
+);
 
 // Collector Inventory Script URL
-export const COLLECTOR_INVENTORY_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_COLLECTOR_INVENTORY_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbxshC2U2vFFdboUA4Xovibz7qjBlBHCM66W3JN3i-8cWKe_sJcAl5Z4-LqXYD3KDYEh/exec");
+export const COLLECTOR_INVENTORY_SCRIPT_URL: string = getValidUrl(
+  import.meta.env.VITE_COLLECTOR_INVENTORY_SCRIPT_URL,
+  "https://script.google.com/macros/s/AKfycbxshC2U2vFFdboUA4Xovibz7qjBlBHCM66W3JN3i-8cWKe_sJcAl5Z4-LqXYD3KDYEh/exec",
+);
 
 // Onboarding Account Audit Report Script URL
-export const ONBOARDING_AUDIT_SCRIPT_URL: string = "https://script.google.com/macros/s/AKfycbzifIxZFboKWxdXaIcabFQ_7WkccWAij9F2LwccNWyQrkqFw_Cs688uf_RisvXVNFwbCw/exec";
+export const ONBOARDING_AUDIT_SCRIPT_URL: string =
+  "https://script.google.com/macros/s/AKfycbzifIxZFboKWxdXaIcabFQ_7WkccWAij9F2LwccNWyQrkqFw_Cs688uf_RisvXVNFwbCw/exec";
 
 // Account Closure Audit Script URL
-export const ACCOUNT_CLOSURE_AUDIT_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_ACCOUNT_CLOSURE_AUDIT_URL, "https://script.google.com/macros/s/AKfycbzle7UUrdcDp5vw1_XUQuYjNQM2GYS_vGhHI2R47KhT-IO9Qy9_BSRrJp7a8Odd4bVLlw/exec");
+export const ACCOUNT_CLOSURE_AUDIT_SCRIPT_URL: string = getValidUrl(
+  import.meta.env.VITE_ACCOUNT_CLOSURE_AUDIT_URL,
+  "https://script.google.com/macros/s/AKfycbzle7UUrdcDp5vw1_XUQuYjNQM2GYS_vGhHI2R47KhT-IO9Qy9_BSRrJp7a8Odd4bVLlw/exec",
+);
 
 // RPC Audit Script URL
-export const RPC_AUDIT_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_RPC_AUDIT_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbxC2PEHJaMFl6lf5zGxlbK2zN0Le1HaUSYRqnB86_bFujeUlBu1dzTkwZTaaDeOTPMu3Q/exec");
+export const RPC_AUDIT_SCRIPT_URL: string = getValidUrl(
+  import.meta.env.VITE_RPC_AUDIT_SCRIPT_URL,
+  "https://script.google.com/macros/s/AKfycbxC2PEHJaMFl6lf5zGxlbK2zN0Le1HaUSYRqnB86_bFujeUlBu1dzTkwZTaaDeOTPMu3Q/exec",
+);
 
 // Billing Audit Script URL
-export const BILLING_AUDIT_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_BILLING_AUDIT_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbxjOoPRA0WoS45ehHUpJu_HR_ZJsYVGI5Wk85UuAgMkZAWrX4d09rKD_8kQlCskYZ9fVA/exec");
+export const BILLING_AUDIT_SCRIPT_URL: string =
+  "https://script.google.com/macros/s/AKfycbxjOoPRA0WoS45ehHUpJu_HR_ZJsYVGI5Wk85UuAgMkZAWrX4d09rKD_8kQlCskYZ9fVA/exec";
 
 // Audit Scoring Script URL
-export const AUDIT_SCORING_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_AUDIT_SCORING_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbzuCY3PXXVshOhB2aKrPbaTx7khR_8Zha3aPlCuAeRP_2OaQjLgvjMGl0kZwIEpjFqGIg/exec");
+export const AUDIT_SCORING_SCRIPT_URL: string =
+  "https://script.google.com/macros/s/AKfycbzuCY3PXXVshOhB2aKrPbaTx7khR_8Zha3aPlCuAeRP_2OaQjLgvjMGl0kZwIEpjFqGIg/exec";
+
+// Account Monitoring Audit Script URL
+export const ACCOUNT_MONITORING_AUDIT_SCRIPT_URL: string =
+  "https://script.google.com/macros/s/AKfycbwtnQ2B1i6yvcbZ29-D1FWaVzsLz14sQzFT1TTJGBnzK2oyPUcTp01oafeMw-VTbaQz/exec";
 
 // KPI Dashboard Script URL
-export const KPI_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_KPI_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbw2-0NgTNlwg4OISWXS4Q9A2Glmhg8tBZjAVoXkrYc28V-yBz905pobt4kndKH18fImbw/exec");
+export const KPI_SCRIPT_URL: string =
+  "https://script.google.com/macros/s/AKfycbw2-0NgTNlwg4OISWXS4Q9A2Glmhg8tBZjAVoXkrYc28V-yBz905pobt4kndKH18fImbw/exec";
 
 // Initial Campaign Script URL
-export const INITIAL_CAMPAIGN_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_INITIAL_CAMPAIGN_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbwGbv81YQxe56VnPpsFt29YgRkop4r21EZUwr6Fu0whi6BHpaylp2xV7453WvTAs0mT/exec");
+export const INITIAL_CAMPAIGN_SCRIPT_URL: string = getValidUrl(
+  import.meta.env.VITE_INITIAL_CAMPAIGN_SCRIPT_URL,
+  "https://script.google.com/macros/s/AKfycbwGbv81YQxe56VnPpsFt29YgRkop4r21EZUwr6Fu0whi6BHpaylp2xV7453WvTAs0mT/exec",
+);
 
 // Unactivated Accounts Script URL
-export const UNACTIVATED_ACCOUNTS_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_UNACTIVATED_ACCOUNTS_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbxPBxogaDEawHKb3L-j_Ni6Ur8J30lME1xO8bPgLaG-goAel7ExRJWZiGv8ywRuPu-PRA/exec");
+export const UNACTIVATED_ACCOUNTS_SCRIPT_URL: string = getValidUrl(
+  import.meta.env.VITE_UNACTIVATED_ACCOUNTS_SCRIPT_URL,
+  "https://script.google.com/macros/s/AKfycbxPBxogaDEawHKb3L-j_Ni6Ur8J30lME1xO8bPgLaG-goAel7ExRJWZiGv8ywRuPu-PRA/exec",
+);
 
 // SMS Campaign Script URL
-export const SMS_CAMPAIGN_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_SMS_CAMPAIGN_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbya9z6sG_e2ibTT9e_ejxT-mA73I3uFmrdahe9U58tatAwpV8Ar_qv1ZrUpX0ZbE3PJ/exec");
+export const SMS_CAMPAIGN_SCRIPT_URL: string = getValidUrl(
+  import.meta.env.VITE_SMS_CAMPAIGN_SCRIPT_URL,
+  "https://script.google.com/macros/s/AKfycbya9z6sG_e2ibTT9e_ejxT-mA73I3uFmrdahe9U58tatAwpV8Ar_qv1ZrUpX0ZbE3PJ/exec",
+);
 
 // Third Party Campaign Script URL
-export const THIRD_PARTY_CAMPAIGN_SCRIPT_URL: string = getValidUrl(import.meta.env.VITE_THIRD_PARTY_CAMPAIGN_SCRIPT_URL, "https://script.google.com/macros/s/AKfycbw2ZPGbGTJf1P2FdXMeGeX2VRF0ZSJKWhle9NumZI8gDzDl8wU3QyrYYFzb6aHJQUm03Q/exec");
+export const THIRD_PARTY_CAMPAIGN_SCRIPT_URL: string = getValidUrl(
+  import.meta.env.VITE_THIRD_PARTY_CAMPAIGN_SCRIPT_URL,
+  "https://script.google.com/macros/s/AKfycbw2ZPGbGTJf1P2FdXMeGeX2VRF0ZSJKWhle9NumZI8gDzDl8wU3QyrYYFzb6aHJQUm03Q/exec",
+);
 
 export const COLLECTORS: Collector[] = [
-  { id: 'c8', name: 'Arianne Sanchez', status: 'online', rank: 10 },
-  { id: 'c9', name: 'Charles Phillips', status: 'offline', rank: 11 },
-  { id: 'c7', name: 'Chris Reed', status: 'online', rank: 7 },
-  { id: 'c14', name: 'Christoper Peterson', status: 'offline', rank: 8 },
-  { id: 'c6', name: 'Elizabeth Harris', status: 'offline', rank: 6 },
-  { id: 'c5', name: 'Karen Justice', status: 'online', rank: 5 },
-  { id: 'c4', name: 'Kim Park', status: 'offline', rank: 4 },
-  { id: 'c3', name: 'Mary Smith', status: 'online', rank: 3 },
-  { id: 'c2', name: 'Penelope Williams', status: 'offline', rank: 2 },
-  { id: 'c15', name: 'Rachel Adler', status: 'online', rank: 12 },
-  { id: 'c13', name: 'Samantha Jocelyn', status: 'online', rank: 9 },
-  { id: 'c1', name: 'Sophia Smith', status: 'online', rank: 1 }
+  { id: "c8", name: "Arianne Sanchez", status: "online", rank: 10 },
+  { id: "c9", name: "Charles Phillips", status: "offline", rank: 11 },
+  { id: "c7", name: "Chris Reed", status: "online", rank: 7 },
+  { id: "c14", name: "Christoper Peterson", status: "offline", rank: 8 },
+  { id: "c6", name: "Elizabeth Harris", status: "offline", rank: 6 },
+  { id: "c5", name: "Karen Justice", status: "online", rank: 5 },
+  { id: "c4", name: "Kim Park", status: "offline", rank: 4 },
+  { id: "c3", name: "Mary Smith", status: "online", rank: 3 },
+  { id: "c2", name: "Penelope Williams", status: "offline", rank: 2 },
+  { id: "c15", name: "Rachel Adler", status: "online", rank: 12 },
+  { id: "c13", name: "Samantha Jocelyn", status: "online", rank: 9 },
+  { id: "c1", name: "Sophia Smith", status: "online", rank: 1 },
 ];
 
 export const DEFAULT_PERMISSIONS: AppPermissions = {
@@ -129,22 +209,28 @@ export const DEFAULT_PERMISSIONS: AppPermissions = {
   sendReport: false,
   addTasks: false,
   addProjects: false,
-  allowedCollectorIds: []
+  allowedCollectorIds: [],
 };
 
 export const CONFIG = {
   STORAGE_KEY: "vg_app_users",
   THEME_KEY: "vg_theme_preference",
   MIRROR_VIEW_KEY: "vg_mirror_view_preference",
-  SESSION_KEY: "vg_active_session"
+  SESSION_KEY: "vg_active_session",
 };
 
 /**
  * Returns default permissions based on the user's role.
  */
-export const getDefaultPermissionsForRole = (role: AppUser['role'], email: string = ''): AppPermissions => {
+export const getDefaultPermissionsForRole = (
+  role: AppUser["role"],
+  email: string = "",
+): AppPermissions => {
   // Special Case: Developer (Mark Mojica)
-  if (role === 'Developer' || email.toLowerCase() === 'mark.mojica@vangardegroup.com') {
+  if (
+    role === "Developer" ||
+    email.toLowerCase() === "mark.mojica@vangardegroup.com"
+  ) {
     return {
       viewRevenue: true,
       viewExecutive: true,
@@ -172,13 +258,13 @@ export const getDefaultPermissionsForRole = (role: AppUser['role'], email: strin
       sendReport: true,
       addTasks: true,
       addProjects: true,
-      allowedCollectorIds: COLLECTORS.map(c => c.id)
+      allowedCollectorIds: COLLECTORS.map((c) => c.id),
     };
   }
 
   // Administrator / Management / CEO
   // Open access to the entire dashboard except the Identity & access tab in the settings page
-  if (role === 'Administrator' || role === 'Manager' || role === 'CEO') {
+  if (role === "Administrator" || role === "Manager" || role === "CEO") {
     return {
       viewRevenue: true,
       viewExecutive: true,
@@ -200,19 +286,19 @@ export const getDefaultPermissionsForRole = (role: AppUser['role'], email: strin
       viewRecovery: false,
       manageRPCLogs: true,
       manageClients: true,
-      manageUsers: false, 
-      managePermissions: false, 
+      manageUsers: false,
+      managePermissions: false,
       manageDocuments: true,
       sendReport: true,
       addTasks: true,
       addProjects: true,
-      allowedCollectorIds: COLLECTORS.map(c => c.id)
+      allowedCollectorIds: COLLECTORS.map((c) => c.id),
     };
   }
 
   // Collector
   // Limited access only to home, postdates, collector main, mirror, rpc logs, and general tab in settings page
-  if (role === 'Collector') {
+  if (role === "Collector") {
     return {
       ...DEFAULT_PERMISSIONS,
       viewPostdates: true,
@@ -224,7 +310,7 @@ export const getDefaultPermissionsForRole = (role: AppUser['role'], email: strin
       viewRecovery: true,
       viewSettings: true,
       manageRPCLogs: true,
-      allowedCollectorIds: [] // Usually restricted to self, but defaults empty for now
+      allowedCollectorIds: [], // Usually restricted to self, but defaults empty for now
     };
   }
 

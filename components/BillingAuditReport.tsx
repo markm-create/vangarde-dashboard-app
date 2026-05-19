@@ -19,9 +19,20 @@ const BillingAuditReport: React.FC<{ onBack: () => void; canExport: boolean }> =
   const { billingAudit: auditState, fetchBillingAudit } = useData();
   const [filterText, setFilterText] = useState('');
   
+  const [dateRange, setDateRange] = useState(() => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return {
+      start: start.toISOString().split('T')[0],
+      end: end.toISOString().split('T')[0]
+    };
+  });
+  const [selectedCollectorFilter, setSelectedCollectorFilter] = useState('All');
+  
   const [sortConfig, setSortConfig] = useState<{ key: keyof BillingAudit; direction: 'asc' | 'desc' }>({
-    key: 'accountNumber',
-    direction: 'asc'
+    key: 'overdueDate',
+    direction: 'desc'
   });
 
   useEffect(() => {
@@ -32,22 +43,63 @@ const BillingAuditReport: React.FC<{ onBack: () => void; canExport: boolean }> =
     return () => clearInterval(interval);
   }, [fetchBillingAudit]);
 
+  const collectorOptions = useMemo(() => {
+    const collectors = new Set<string>();
+    (auditState.data as BillingAudit[] || []).forEach(item => {
+      if (item.agentName && item.agentName !== 'Unknown' && item.agentName !== '') {
+        collectors.add(item.agentName);
+      }
+    });
+    return ['All', ...Array.from(collectors).sort()];
+  }, [auditState.data]);
+
   const filteredData = useMemo(() => {
-    let result = (auditState.data as BillingAudit[] || []).filter(item => 
-      Object.values(item).some(val => 
-        val?.toString().toLowerCase().includes(filterText.toLowerCase())
-      )
-    );
+    let result = (auditState.data as BillingAudit[] || []);
+    
+    if (selectedCollectorFilter !== 'All') {
+        result = result.filter(r => r.agentName === selectedCollectorFilter);
+    }
+    
+    if (dateRange.start || dateRange.end) {
+        result = result.filter(r => {
+            if (!r.overdueDate) return false;
+            try {
+                const d = new Date(r.overdueDate).getTime();
+                if (isNaN(d)) return false;
+                const start = dateRange.start ? new Date(dateRange.start).getTime() : -Infinity;
+                const end = dateRange.end ? new Date(dateRange.end).getTime() + 86400000 : Infinity;
+                return d >= start && d <= end;
+            } catch (e) {
+                return false;
+            }
+        });
+    }
+    
+    if (filterText) {
+      result = result.filter(item => 
+        Object.values(item).some(val => 
+          val?.toString().toLowerCase().includes(filterText.toLowerCase())
+        )
+      );
+    }
     
     result.sort((a, b) => {
-      const aVal = a[sortConfig.key];
-      const bVal = b[sortConfig.key];
+      let aVal: any = a[sortConfig.key];
+      let bVal: any = b[sortConfig.key];
+      
+      if (sortConfig.key === 'overdueDate') {
+          aVal = new Date(aVal).getTime();
+          bVal = new Date(bVal).getTime();
+          if (isNaN(aVal)) aVal = 0;
+          if (isNaN(bVal)) bVal = 0;
+      }
+      
       if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
       if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
       return 0;
     });
     return result;
-  }, [auditState.data, filterText, sortConfig]);
+  }, [auditState.data, filterText, sortConfig, dateRange, selectedCollectorFilter]);
 
   const billingStats = useMemo(() => {
     const stats = { noUpdate: 0, update: 0, delete: 0, followUp: 0 };
@@ -158,9 +210,37 @@ const BillingAuditReport: React.FC<{ onBack: () => void; canExport: boolean }> =
             <div className="p-2 rounded-xl bg-surface-100 text-text-muted"><ClipboardCheck size={18} /></div>
             <h2 className="text-sm font-black text-text-main uppercase tracking-widest">Audit Records</h2>
           </div>
-          <div className="relative group">
-            <Search size={14} className="absolute inset-y-0 left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-            <input type="text" placeholder="Search records..." value={filterText} onChange={(e) => setFilterText(e.target.value)} className="pl-9 pr-4 py-2 bg-surface-100 border border-border-subtle rounded-xl text-[11px] font-medium text-text-main w-64 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all" />
+          <div className="flex gap-2">
+            <div className="flex items-center gap-2 bg-surface-100 border border-border-subtle rounded-xl px-3 py-1.5 shadow-sm">
+                <ClipboardCheck size={14} className="text-text-muted" />
+                <input 
+                    type="date" 
+                    value={dateRange.start} 
+                    onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                    className="bg-transparent border-none text-[10px] font-bold text-text-main focus:ring-0 p-0 w-24"
+                />
+                <span className="text-text-muted text-[10px] font-bold px-1">TO</span>
+                <input 
+                    type="date" 
+                    value={dateRange.end} 
+                    onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                    className="bg-transparent border-none text-[10px] font-bold text-text-main focus:ring-0 p-0 w-24"
+                />
+                <ClipboardCheck size={14} className="text-text-muted" />
+            </div>
+            <select
+                value={selectedCollectorFilter}
+                onChange={(e) => setSelectedCollectorFilter(e.target.value)}
+                className="px-4 py-2 bg-surface-100 border border-border-subtle rounded-xl text-[11px] font-medium text-text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all cursor-pointer"
+            >
+                {collectorOptions.map(opt => (
+                    <option key={opt} value={opt}>{opt === 'All' ? 'All Collectors' : opt}</option>
+                ))}
+            </select>
+            <div className="relative group">
+              <Search size={14} className="absolute inset-y-0 left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+              <input type="text" placeholder="Search records..." value={filterText} onChange={(e) => setFilterText(e.target.value)} className="pl-9 pr-4 py-2 bg-surface-100 border border-border-subtle rounded-xl text-[11px] font-medium text-text-main w-64 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all" />
+            </div>
           </div>
         </div>
         <div className="flex-1 overflow-auto scrollbar-thin">

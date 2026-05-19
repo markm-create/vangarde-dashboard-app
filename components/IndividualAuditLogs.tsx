@@ -147,10 +147,19 @@ const IndividualAuditLogs: React.FC<{
 }> = ({ collector, onBack, canManageDocuments, canSendReport }) => {
   const [viewMode, setViewMode] = useState<ViewMode>('overview');
   const [filterText, setFilterText] = useState('');
-  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: 'accountNumber', direction: 'desc' });
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: 'lastWorkedDate', direction: 'desc' });
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [dateRange, setDateRange] = useState(() => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return {
+      start: start.toISOString().split('T')[0],
+      end: end.toISOString().split('T')[0]
+    };
+  });
   
   const { 
     onboardingAudits, 
@@ -172,6 +181,12 @@ const IndividualAuditLogs: React.FC<{
     fetchBillingAudit();
     fetchAuditScoring(collector.name);
   }, [fetchOnboardingAudits, fetchFlaggedAccounts, fetchBillingAudit, fetchAuditScoring, collector.name]);
+
+  useEffect(() => {
+    if (viewMode === 'breakdown-onboarding') setSortConfig({ key: 'dateAudit', direction: 'desc' });
+    else if (viewMode === 'breakdown-billing') setSortConfig({ key: 'overdueDate', direction: 'desc' });
+    else setSortConfig({ key: 'lastWorkedDate', direction: 'desc' });
+  }, [viewMode]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -234,6 +249,22 @@ const IndividualAuditLogs: React.FC<{
     else if (viewMode === 'breakdown-billing') data = [...billingData];
     else data = [...stagnantData];
     
+    if (dateRange.start || dateRange.end) {
+        data = data.filter((r: any) => {
+            const dateVal = r.dateAudit || r.overdueDate || r.lastWorkedDate;
+            if (!dateVal) return false;
+            try {
+                const d = new Date(dateVal).getTime();
+                if (isNaN(d)) return false;
+                const start = dateRange.start ? new Date(dateRange.start).getTime() : -Infinity;
+                const end = dateRange.end ? new Date(dateRange.end).getTime() + 86400000 : Infinity;
+                return d >= start && d <= end;
+            } catch (e) {
+                return false;
+            }
+        });
+    }
+
     if (filterText) {
       const l = filterText.toLowerCase();
       data = data.filter((i: any) => 
@@ -268,7 +299,7 @@ const IndividualAuditLogs: React.FC<{
       return 0;
     });
     return data;
-  }, [viewMode, onboardingData, billingData, stagnantData, filterText, sortConfig, statusFilter]);
+  }, [viewMode, onboardingData, billingData, stagnantData, filterText, sortConfig, statusFilter, dateRange]);
 
   const handleExport = () => {
     const isOb = viewMode === 'breakdown-onboarding';
@@ -538,7 +569,24 @@ const IndividualAuditLogs: React.FC<{
                     </div>
                     <h2 className="text-xs font-black text-text-main uppercase tracking-widest">Itemized Audit Records</h2>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 text-indigo-600">
+                    <div className="flex items-center gap-2 bg-surface-100 border border-border-subtle rounded-xl px-3 py-1.5 shadow-sm">
+                        <CalendarDays size={14} className="text-text-muted" />
+                        <input 
+                            type="date" 
+                            value={dateRange.start} 
+                            onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                            className="bg-transparent border-none text-[10px] font-bold text-text-main focus:ring-0 p-0 w-24"
+                        />
+                        <span className="text-text-muted text-[10px] font-bold px-1">TO</span>
+                        <input 
+                            type="date" 
+                            value={dateRange.end} 
+                            onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                            className="bg-transparent border-none text-[10px] font-bold text-text-main focus:ring-0 p-0 w-24"
+                        />
+                        <CalendarDays size={14} className="text-text-muted" />
+                    </div>
                     <button 
                         onClick={() => {
                           if (isOnboarding) fetchOnboardingAudits(true);

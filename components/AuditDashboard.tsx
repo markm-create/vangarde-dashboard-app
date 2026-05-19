@@ -41,6 +41,7 @@ import {
 import { generateOnboardingAudits, generatePostdatesAudits, generateBillingAudits, generateAeeRtpAudits, generateAccountMonitoringAudits, generateCallMonitoringAudits, generateSevenEightDayAudits, generateRpcAudits, BaseAudit, SevenEightDayAudit } from './mockData';
 import { useData } from '../DataContext';
 import BillingAuditReport from './BillingAuditReport';
+import { AccountMonitoringAuditView } from './AccountMonitoringAuditView';
 
 type AuditViewType = 'overview' | 'onboarding' | 'postdates' | 'billing' | 'aee_rtp' | 'account_monitoring' | 'call_monitoring' | 'seven_eight_days' | 'rpc' | 'individual_flagged' | 'individual_onboarding';
 
@@ -286,6 +287,15 @@ const AuditDashboard: React.FC<{
     );
   }
 
+  if (activeView === 'account_monitoring') {
+    return (
+      <AccountMonitoringAuditView 
+        onBack={() => onNavigate ? window.history.back() : setActiveView('overview')} 
+        canExport={canManageDocuments} 
+      />
+    );
+  }
+
   let config: any = { data: [], title: "", icon: ClipboardCheck, color: "#6366f1", summaryData: null };
   switch(activeView) {
     case 'onboarding': config = { data: onboardingData, title: "Onboarding Account Audit", icon: ClipboardCheck, color: "#6366f1" }; break;
@@ -339,6 +349,18 @@ const StagnantAccountReport = ({
     const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
     const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
     const [isFullScreen, setIsFullScreen] = useState(false);
+    
+    const [dateRange, setDateRange] = useState(() => {
+        const now = new Date();
+        const start = new Date(now.getFullYear(), now.getMonth(), 1);
+        const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        return {
+            start: start.toISOString().split('T')[0],
+            end: end.toISOString().split('T')[0]
+        };
+    });
+    const [selectedCollectorFilter, setSelectedCollectorFilter] = useState('All');
+
     const sortMenuRef = useRef<HTMLDivElement>(null);
     const filterMenuRef = useRef<HTMLDivElement>(null);
 
@@ -351,8 +373,64 @@ const StagnantAccountReport = ({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    const monthOptions = useMemo(() => {
+        const months = new Set<string>();
+        const today = new Date();
+        months.add(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`);
+        
+        data.forEach(item => {
+            if (item.lastWorkedDate) {
+                try {
+                const date = new Date(item.lastWorkedDate);
+                if (!isNaN(date.getTime())) {
+                    months.add(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
+                }
+                } catch (e) {}
+            }
+        });
+        
+        return [{ value: 'All Time', label: 'All Time' }, ...Array.from(months).sort().reverse().map(value => {
+            const [year, month] = value.split('-');
+            const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+            return {
+                value,
+                label: date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+            };
+        })];
+    }, [data]);
+
+    const collectorOptions = useMemo(() => {
+        const collectors = new Set<string>();
+        data.forEach(item => {
+            if (item.agentName && item.agentName !== 'Unknown' && item.agentName !== '') {
+                collectors.add(item.agentName);
+            }
+        });
+        return ['All', ...Array.from(collectors).sort()];
+    }, [data]);
+
     const filteredData = useMemo(() => {
         let result = [...data];
+        
+        if (selectedCollectorFilter !== 'All') {
+            result = result.filter(r => r.agentName === selectedCollectorFilter);
+        }
+        
+        if (dateRange.start || dateRange.end) {
+            result = result.filter(r => {
+                if (!r.lastWorkedDate) return false;
+                try {
+                    const d = new Date(r.lastWorkedDate).getTime();
+                    if (isNaN(d)) return false;
+                    const start = dateRange.start ? new Date(dateRange.start).getTime() : -Infinity;
+                    const end = dateRange.end ? new Date(dateRange.end).getTime() + 86400000 : Infinity;
+                    return d >= start && d <= end;
+                } catch (e) {
+                    return false;
+                }
+            });
+        }
+        
         if (filterText) {
             const l = filterText.toLowerCase();
             result = result.filter(r => 
@@ -522,6 +600,32 @@ const StagnantAccountReport = ({
                         <h2 className="text-sm font-black text-text-main uppercase tracking-widest">Breakdown</h2>
                     </div>
                     <div className="flex gap-2">
+                        <div className="flex items-center gap-2 bg-surface-100 border border-border-subtle rounded-xl px-3 py-1.5 shadow-sm">
+                            <CalendarDays size={14} className="text-text-muted" />
+                            <input 
+                                type="date" 
+                                value={dateRange.start} 
+                                onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                                className="bg-transparent border-none text-[10px] font-bold text-text-main focus:ring-0 p-0 w-24"
+                            />
+                            <span className="text-text-muted text-[10px] font-bold">TO</span>
+                            <input 
+                                type="date" 
+                                value={dateRange.end} 
+                                onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                                className="bg-transparent border-none text-[10px] font-bold text-text-main focus:ring-0 p-0 w-24 border-r-0"
+                            />
+                            <CalendarDays size={14} className="text-text-muted" />
+                        </div>
+                        <select
+                            value={selectedCollectorFilter}
+                            onChange={(e) => setSelectedCollectorFilter(e.target.value)}
+                            className="px-3 py-1.5 bg-surface-100 border border-border-subtle rounded-xl text-[11px] font-medium text-text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all cursor-pointer shadow-sm"
+                        >
+                            {collectorOptions.map(opt => (
+                                <option key={opt} value={opt}>{opt === 'All' ? 'All Collectors' : opt}</option>
+                            ))}
+                        </select>
                         <div className="relative group">
                             <Search size={14} className="absolute inset-y-0 left-3 top-1/2 -translate-y-1/2 text-text-muted" />
                             <input type="text" placeholder="Search..." value={filterText} onChange={(e) => setFilterText(e.target.value)} className="pl-9 pr-4 py-2 bg-surface-100 border border-border-subtle rounded-xl text-[11px] font-medium text-text-main w-64 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all" />
@@ -760,14 +864,14 @@ const StagnantAccountReport = ({
 const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack, canExport, isLoading, onRefresh }: any) => {
   const [filterText, setFilterText] = useState('');
   const [sortConfig, setSortConfig] = useState<{key: string, direction: 'asc' | 'desc'}>(() => {
-    if (viewType === 'onboarding') return { key: 'auditResult', direction: 'asc' };
+    if (viewType === 'onboarding') return { key: 'dateAudit', direction: 'desc' };
     if (viewType === 'postdates') return { key: 'transactionDate', direction: 'desc' };
     if (viewType === 'rpc') return { key: 'callDate', direction: 'desc' };
     return { key: 'dateAudited', direction: 'desc' };
   });
 
   useEffect(() => {
-    if (viewType === 'onboarding') setSortConfig({ key: 'auditResult', direction: 'asc' });
+    if (viewType === 'onboarding') setSortConfig({ key: 'dateAudit', direction: 'desc' });
     else if (viewType === 'postdates') setSortConfig({ key: 'transactionDate', direction: 'desc' });
     else if (viewType === 'rpc') setSortConfig({ key: 'callDate', direction: 'desc' });
     else setSortConfig({ key: 'dateAudited', direction: 'desc' });
@@ -785,6 +889,48 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
       end: end.toISOString().split('T')[0]
     };
   });
+  const [selectedCollectorFilter, setSelectedCollectorFilter] = useState('All');
+
+  const monthOptions = useMemo(() => {
+    const months = new Set<string>();
+    const today = new Date();
+    months.add(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`);
+    
+    (rawData || []).forEach((item: any) => {
+      let dateVal = item.dateAudit || item.dateAudited || item.transactionDate || item.callDate;
+      if (dateVal) {
+        if (typeof dateVal === 'string') {
+             dateVal = dateVal.replace(/\s+[l|]\s+/g, ' ');
+        }
+        try {
+          const date = new Date(dateVal);
+          if (!isNaN(date.getTime())) {
+            months.add(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
+          }
+        } catch (e) {}
+      }
+    });
+    
+    return [{ value: 'All Time', label: 'All Time' }, ...Array.from(months).sort().reverse().map(value => {
+      const [year, month] = value.split('-');
+      const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+      return {
+        value,
+        label: date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+      };
+    })];
+  }, [rawData]);
+
+  const collectorOptions = useMemo(() => {
+    const collectors = new Set<string>();
+    (rawData || []).forEach((item: any) => {
+      const name = item.agentName || item.collectorName;
+      if (name && name !== 'Unknown' && name !== '') {
+        collectors.add(name);
+      }
+    });
+    return ['All', ...Array.from(collectors).sort()];
+  }, [rawData]);
   
   const filterMenuRef = useRef<HTMLDivElement>(null);
   const sortMenuRef = useRef<HTMLDivElement>(null);
@@ -801,19 +947,25 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
   const filteredData = useMemo(() => {
     let data = [...rawData];
     
+    if (selectedCollectorFilter !== 'All') {
+        data = data.filter((i: any) => (i.agentName || i.collectorName) === selectedCollectorFilter);
+    }
+    
     // Date range filtering
     if ((dateRange.start || dateRange.end) && String(viewType).toLowerCase() !== 'onboarding') {
       data = data.filter(i => {
         let dateVal = i.dateAudit || i.dateAudited || i.transactionDate || i.callDate;
-        if (!dateVal) return true;
+        if (!dateVal) return false;
         if (typeof dateVal === 'string') {
             dateVal = dateVal.replace(/\s+[l|]\s+/g, ' ');
         }
-        const d = new Date(dateVal).getTime();
-        if (isNaN(d)) return true;
-        const start = dateRange.start ? new Date(dateRange.start).getTime() : -Infinity;
-        const end = dateRange.end ? new Date(dateRange.end).getTime() + 86400000 : Infinity; // +1 day to include the end date
-        return d >= start && d <= end;
+        try {
+            const d = new Date(dateVal).getTime();
+            if (isNaN(d)) return false;
+            const start = dateRange.start ? new Date(dateRange.start).getTime() : -Infinity;
+            const end = dateRange.end ? new Date(dateRange.end).getTime() + 86400000 : Infinity; // +1 day to include the end date
+            return d >= start && d <= end;
+        } catch (e) { return false; }
       });
     }
 
@@ -875,7 +1027,7 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
       return 0;
     });
     return data;
-  }, [rawData, filterText, sortConfig, statusFilter, viewType, dateRange]);
+  }, [rawData, filterText, sortConfig, statusFilter, viewType, dateRange, selectedCollectorFilter]);
 
   const stats = useMemo(() => {
       if (viewType === 'rpc') {
@@ -1426,15 +1578,25 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
                           onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
                           className="bg-transparent border-none text-[10px] font-bold text-text-main focus:ring-0 p-0 w-24"
                       />
-                      <span className="text-text-muted text-[10px] font-bold">to</span>
+                      <span className="text-text-muted text-[10px] font-bold px-1">TO</span>
                       <input 
                           type="date" 
                           value={dateRange.end} 
                           onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
                           className="bg-transparent border-none text-[10px] font-bold text-text-main focus:ring-0 p-0 w-24"
                       />
+                      <CalendarDays size={14} className="text-text-muted" />
                   </div>
                 )}
+                <select
+                    value={selectedCollectorFilter}
+                    onChange={(e) => setSelectedCollectorFilter(e.target.value)}
+                    className="px-3 py-1.5 bg-surface-100 border border-border-subtle rounded-xl text-[11px] font-medium text-text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all cursor-pointer shadow-sm"
+                >
+                    {collectorOptions.map(opt => (
+                        <option key={opt} value={opt}>{opt === 'All' ? 'All Collectors' : opt}</option>
+                    ))}
+                </select>
                 
                 {onRefresh && (
                     <button 

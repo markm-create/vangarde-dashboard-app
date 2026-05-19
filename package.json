@@ -13,6 +13,7 @@
     "@google/genai": "^1.43.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "html2pdf.js": "^0.14.0",
     "lucide-react": "^0.563.0",
     "motion": "^12.34.4",
     "node-fetch": "^3.3.2",
