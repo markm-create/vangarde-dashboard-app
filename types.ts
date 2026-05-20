@@ -1,4 +1,56 @@
 // Types for the application
+export interface WeeklyProjection { 
+  projection: number; 
+  collected: number; 
+  reached: number; 
+}
+
+export interface AgentProjection { 
+  id: string; 
+  name: string; 
+  weeks: { 
+    w1: WeeklyProjection; 
+    w2: WeeklyProjection; 
+    w3: WeeklyProjection; 
+    w4: WeeklyProjection; 
+  }; 
+  totalProjection: number; 
+  totalCollected: number; 
+  totalReached: number; 
+}
+
+export interface Payment {
+  id?: string | number;
+  accountId: string;
+  owner: string;
+  dateTime: string;
+  amount: number;
+  status: 'Scheduled' | 'Succeeded' | 'Declined' | 'Failed' | 'Recovered' | 'Rescheduled' | 'Unrecoverable' | 'Broken Promise';
+  rawDate: Date;
+  ppaAuditStatus?: string;
+  originalRowIndex?: number;
+}
+
+export interface RPCLog {
+  id: string;
+  date: string;
+  collectorName: string;
+  accountNumber: string;
+  clientName: string;
+  moneyPlanned: 'Yes' | 'No';
+  caseUpdate: 'Collected' | 'Ghosted' | 'RTP';
+  notes: string;
+  createdAt: string;
+}
+
+export interface Reminder {
+  id: string;
+  collectorName: string;
+  text: string;
+  date: string;
+  loggedDate: string;
+}
+
 export interface Collector {
   id: string;
   name: string;
@@ -35,6 +87,7 @@ export interface AppPermissions {
   managePermissions: boolean;
   
   // Actions
+  editProjections: boolean;
   manageRPCLogs: boolean;
   manageClients: boolean;
   manageDocuments: boolean; // download/upload

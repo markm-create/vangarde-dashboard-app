@@ -1,36 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { sheetService } from './services/sheetService';
-import { ExecutiveData, HomeData, Collector, AuditScoringData } from './types';
+import { ExecutiveData, HomeData, Collector, AuditScoringData, Payment, RPCLog, Reminder, AgentProjection } from './types';
 import { PROJECTION_SCRIPT_URL, ONBOARDING_AUDIT_SCRIPT_URL, ACCOUNT_CLOSURE_AUDIT_SCRIPT_URL, DECLINE_RECOVERY_SCRIPT_URL, KPI_SCRIPT_URL, RPC_AUDIT_SCRIPT_URL, ACCOUNT_MONITORING_AUDIT_SCRIPT_URL } from './constants';
-
-interface Payment { 
-  accountId: string; 
-  owner: string; 
-  dateTime: string; 
-  amount: number; 
-  status: 'Scheduled' | 'Succeeded' | 'Declined' | 'Failed' | 'Recovered' | 'Rescheduled' | 'Unrecoverable' | 'Broken Promise'; 
-  rawDate: Date; 
-}
-
-interface RPCLog {
-  id: string;
-  date: string;
-  collectorName: string;
-  accountNumber: string;
-  clientName: string;
-  moneyPlanned: 'Yes' | 'No';
-  caseUpdate: 'Collected' | 'Ghosted' | 'RTP';
-  notes: string;
-  createdAt: string;
-}
-
-interface Reminder {
-  id: string;
-  collectorName: string;
-  text: string;
-  date: string;
-  loggedDate: string;
-}
 
 interface DataContextType {
   postdates: {
@@ -209,6 +180,7 @@ interface DataContextType {
   fetchCollectorHome: (collectorName: string, force?: boolean) => Promise<void>;
   fetchNewAssignedAccounts: (force?: boolean) => Promise<void>;
   fetchCollectorInventory: (collectorName: string, force?: boolean) => Promise<void>;
+  updateProjectionLocal: (data: AgentProjection[]) => void;
   updateRPCLogsLocal: (logs: RPCLog[]) => void;
   updateRemindersLocal: (reminders: Reminder[]) => void;
 }
@@ -722,51 +694,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setProjection(prev => ({ ...prev, isLoading: true, error: null }));
     try {
-      const SCRIPT_URL = import.meta.env.VITE_PROJECTION_SCRIPT_URL || PROJECTION_SCRIPT_URL;
-      if (!SCRIPT_URL || SCRIPT_URL.includes('PLACEHOLDER')) {
-        // Mock data logic
-        const activeCollectors = collectors.data || [];
-        const mock = activeCollectors.map((c: any, i: number) => {
-          const seed = i + 5; const bp = 15000 + (seed % 5) * 2000;
-          const generateWeek = (idx: number) => { const proj = bp + (Math.sin(idx + seed) * 1000); const perfMult = 0.7 + (Math.random() * 0.45); const coll = proj * perfMult; return { projection: proj, collected: coll, reached: (coll / proj) * 100 }; };
-          const w1 = generateWeek(1); const w2 = generateWeek(2); const w3 = generateWeek(3); const w4 = generateWeek(4);
-          const tp = w1.projection + w2.projection + w3.projection + w4.projection; const tc = w1.collected + w2.collected + w3.collected + w4.collected;
-          return { id: c.id, name: c.name, weeks: { w1, w2, w3, w4 }, totalProjection: tp, totalCollected: tc, totalReached: (tc / tp) * 100 };
-        });
-        setProjection({
-          data: mock,
-          isLoading: false,
-          lastFetched: Date.now(),
-          error: null,
-        });
-        return;
-      }
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort('Timeout exceeded'), 30000);
-
-      const response = await fetch(SCRIPT_URL, { 
-        method: 'GET',
-        cache: 'no-store',
-        signal: controller.signal
-      });
+      const result = await sheetService.getProjectionData();
       
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) throw new Error(`Server responded with status ${response.status}`);
-      
-      const result = await response.json();
-      
-      if (result.error) {
-        throw new Error(`Google Script Error: ${result.error}`);
-      }
-
       if (Array.isArray(result) && result.length > 0) {
         const mapped = result.map((item: any, i: number) => {
           const getWeek = (w: any) => ({
             projection: Number(w?.projection) || 0,
             collected: Number(w?.collected) || 0,
-            reached: (Number(w?.collected) / Number(w?.projection)) * 100 || 0
+            reached: (Number(w?.collected) / (Number(w?.projection) || 1)) * 100
           });
 
           const w1 = getWeek(item.weeks?.w1);
@@ -778,7 +713,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const tc = w1.collected + w2.collected + w3.collected + w4.collected;
           
           return {
-            id: `agent-${i}`,
+            id: item.id || `agent-${i}`,
             name: item.name || `Collector ${i + 1}`,
             weeks: { w1, w2, w3, w4 },
             totalProjection: tp,
@@ -793,9 +728,34 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           error: null,
         });
       } else if (Array.isArray(result) && result.length === 0) {
-        throw new Error("The database is currently empty (no data found starting from Row 3).");
+        // Only treat as error if we expected live data
+        const SCRIPT_URL = PROJECTION_SCRIPT_URL;
+        if (!SCRIPT_URL || SCRIPT_URL.includes('PLACEHOLDER')) {
+          // Mock data fallback if URL is empty/placeholder
+          const activeCollectors = collectors.data || [];
+          const mock = activeCollectors.map((c: any, i: number) => {
+            const seed = i + 5; const bp = 15000 + (seed % 5) * 2000;
+            const generateWeek = (idx: number) => { const proj = bp + (Math.sin(idx + seed) * 1000); const perfMult = 0.7 + (Math.random() * 0.45); const coll = proj * perfMult; return { projection: proj, collected: coll, reached: (coll / proj) * 100 }; };
+            const w1 = generateWeek(1); const w2 = generateWeek(2); const w3 = generateWeek(3); const w4 = generateWeek(4);
+            const tp = w1.projection + w2.projection + w3.projection + w4.projection; const tc = w1.collected + w2.collected + w3.collected + w4.collected;
+            return { id: c.id, name: c.name, weeks: { w1, w2, w3, w4 }, totalProjection: tp, totalCollected: tc, totalReached: (tc / tp) * 100 };
+          });
+          setProjection({
+            data: mock,
+            isLoading: false,
+            lastFetched: Date.now(),
+            error: null,
+          });
+        } else {
+          setProjection({
+            data: [],
+            isLoading: false,
+            lastFetched: Date.now(),
+            error: "Empty projection database. Please ensure data exists in the 'Projections' sheet.",
+          });
+        }
       } else {
-        throw new Error("Received an unexpected data format from the script.");
+        throw new Error("Received an unexpected data format.");
       }
     } catch (error) {
       console.error('Error fetching projection data:', error);
@@ -1223,6 +1183,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }));
   }, []);
 
+  const updateProjectionLocal = useCallback((data: AgentProjection[]) => {
+    setProjection(prev => ({
+      ...prev,
+      data,
+      lastFetched: Date.now()
+    }));
+  }, []);
+
   const updateRemindersLocal = useCallback((reminders: Reminder[]) => {
     setReminders(prev => ({
       ...prev,
@@ -1283,6 +1251,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       fetchCollectorHome,
       fetchNewAssignedAccounts,
       fetchCollectorInventory,
+      updateProjectionLocal,
       updateRPCLogsLocal,
       updateRemindersLocal
     }}>

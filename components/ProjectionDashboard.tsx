@@ -1,16 +1,96 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Target, Download, Users, Loader2 } from 'lucide-react';
+import { Target, Download, Users, Loader2, Edit2, Save, X, RefreshCw } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useData } from '../DataContext';
 import { PROJECTION_SCRIPT_URL } from '../constants';
-
-interface WeeklyProjection { projection: number; collected: number; reached: number; }
-interface AgentProjection { id: string; name: string; weeks: { w1: WeeklyProjection; w2: WeeklyProjection; w3: WeeklyProjection; w4: WeeklyProjection; }; totalProjection: number; totalCollected: number; totalReached: number; }
+import { AppUser, AgentProjection } from '../types';
+import { sheetService } from '../services/sheetService';
 
 const SCRIPT_URL = import.meta.env.VITE_PROJECTION_SCRIPT_URL || PROJECTION_SCRIPT_URL;
 
-const ProjectionDashboard: React.FC = () => {
-  const { collectors, fetchCollectors, projection, fetchProjection } = useData();
+const ProjectionDashboard: React.FC<{ currentUser: AppUser }> = ({ currentUser }) => {
+  const { collectors, fetchCollectors, projection, fetchProjection, updateProjectionLocal } = useData();
   const [isMock, setIsMock] = useState(false);
+
+  // Edit State
+  const [editingWeek, setEditingWeek] = useState<number | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editFormData, setEditFormData] = useState<Record<string, number>>({});
+
+  const handleEditWeek = (week: number) => {
+    setEditingWeek(week);
+    const initialData: Record<string, number> = {};
+    const weekKey = `w${week}` as 'w1' | 'w2' | 'w3' | 'w4';
+    const sortedD = [...(projection.data || [])].sort((a, b) => a.name.localeCompare(b.name));
+    sortedD.forEach(agent => {
+      initialData[agent.id] = agent.weeks[weekKey].projection || 0;
+    });
+    setEditFormData(initialData);
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingWeek === null) return;
+    setIsSubmitting(true);
+
+    const weekKey = `w${editingWeek}` as 'w1' | 'w2' | 'w3' | 'w4';
+    const updates = Object.keys(editFormData).map(agentId => {
+      const agent = projection.data?.find(a => a.id === agentId);
+      if (!agent) return null;
+      if (editFormData[agentId] === agent.weeks[weekKey].projection) return null;
+      
+      return {
+        agentId: agent.id,
+        agentName: agent.name,
+        projections: {
+          [weekKey]: editFormData[agentId]
+        }
+      };
+    }).filter(Boolean);
+
+    // Optimistic update
+    const newData = projection.data?.map(agent => {
+      if (editFormData[agent.id] !== undefined) {
+         const newProj = editFormData[agent.id];
+         const updatedWeeks = {
+           ...agent.weeks,
+           [weekKey]: { ...agent.weeks[weekKey], projection: newProj }
+         };
+         const totalProjection = updatedWeeks.w1.projection + updatedWeeks.w2.projection + updatedWeeks.w3.projection + updatedWeeks.w4.projection;
+         const totalReached = totalProjection > 0 ? (agent.totalCollected / totalProjection) * 100 : 0;
+         return {
+           ...agent,
+           weeks: updatedWeeks,
+           totalProjection,
+           totalReached
+         };
+      }
+      return agent;
+    }) || [];
+    
+    updateProjectionLocal(newData);
+    setIsEditModalOpen(false);
+    setEditingWeek(null);
+    setIsSubmitting(false);
+
+    if (updates.length > 0) {
+      // Background process for Google Sheets update
+      (async () => {
+        try {
+          const success = await sheetService.updateProjection(updates);
+          if (success) {
+            fetchProjection(true); // Background refresh
+          } else {
+            console.error("Failed to update projections remotely.");
+          }
+        } catch (error) {
+          console.error('Error updating projection remotely:', error);
+        }
+      })();
+    }
+  };
 
   useEffect(() => {
     fetchCollectors();
@@ -164,8 +244,19 @@ const ProjectionDashboard: React.FC = () => {
                 <thead><tr className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] border-b border-border-subtle bg-card">
                     <th className="px-10 py-6 sticky left-0 bg-card z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] text-xs">Agent Name</th>
                     {[1, 2, 3, 4].map((w, idx) => (<th key={w} className={`px-8 py-4 text-center border-l border-border-subtle min-w-[300px] ${w%2!==0?'bg-surface-100/50':''}`}>
-                       <div className="flex flex-col items-center">
-                          <span className="text-[13px] font-black text-text-main">Week {w}</span>
+                       <div className="flex flex-col items-center relative">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[13px] font-black text-text-main">Week {w}</span>
+                            {currentUser.permissions.editProjections && (
+                              <button 
+                                onClick={() => handleEditWeek(w)}
+                                className="p-1.5 hover:bg-indigo-100 text-indigo-600 rounded-lg transition-colors absolute -right-2 top-0"
+                                title="Edit Projections for this Week"
+                              >
+                                <Edit2 size={14} />
+                              </button>
+                            )}
+                          </div>
                           <span className="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded mt-1 uppercase tracking-tight">{weekRanges[idx]}</span>
                        </div>
                        <div className="flex gap-10 mt-3 justify-center font-black text-[9px]"><span className="w-16">PROJ</span><span className="w-16">COLL</span><span className="w-12">%</span></div>
@@ -183,6 +274,78 @@ const ProjectionDashboard: React.FC = () => {
              </table>
           </div>
       </div>
+
+      <AnimatePresence>
+        {isEditModalOpen && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm px-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-card w-full max-w-xl rounded-[2.5rem] border border-border-subtle shadow-2xl overflow-hidden"
+            >
+              <div className="p-8 border-b border-border-subtle flex justify-between items-center bg-surface-50">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-black text-sm">
+                    {editingWeek && `W${editingWeek}`}
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black text-text-main uppercase tracking-tight">Set Weekly Targets</h2>
+                    <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mt-1">
+                      Updating projections for Week {editingWeek} ({editingWeek ? weekRanges[editingWeek-1] : ''})
+                    </p>
+                  </div>
+                </div>
+                <button onClick={() => setIsEditModalOpen(false)} className="p-3 hover:bg-surface-200 rounded-2xl transition-colors">
+                  <X size={20} className="text-text-muted" />
+                </button>
+              </div>
+              
+              <form onSubmit={handleSaveEdit} className="flex flex-col max-h-[80vh]">
+                <div className="p-8 space-y-4 overflow-y-auto scrollbar-thin max-h-[500px]">
+                  {sortedData.map((agent) => (
+                    <div key={agent.id} className="flex items-center justify-between gap-6 p-4 rounded-2xl border border-border-subtle bg-surface-50 hover:bg-surface-100 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-[11px]">
+                          {agent.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                        </div>
+                        <span className="font-bold text-sm text-text-main">{agent.name}</span>
+                      </div>
+                      <div className="relative group w-48">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted font-bold group-focus-within:text-indigo-600 transition-colors">$</div>
+                        <input 
+                          type="number"
+                          value={editFormData[agent.id] ?? 0}
+                          onChange={(e) => setEditFormData(prev => ({ ...prev, [agent.id]: parseFloat(e.target.value) || 0 }))}
+                          className="w-full pl-8 pr-4 py-3 bg-card border border-border-subtle rounded-xl text-[13px] font-black focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all text-right"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="p-8 border-t border-border-subtle bg-surface-50 flex gap-4">
+                  <button 
+                    type="button"
+                    onClick={() => setIsEditModalOpen(false)}
+                    className="flex-1 px-8 py-4 bg-white text-text-main border border-border-subtle rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-surface-100 transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex-1 px-8 py-4 bg-indigo-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-indigo-700 shadow-xl shadow-indigo-500/20 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+                  >
+                    {isSubmitting ? <RefreshCw size={18} className="animate-spin" /> : <Save size={18} />}
+                    {isSubmitting ? 'Saving...' : 'Update All Targets'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

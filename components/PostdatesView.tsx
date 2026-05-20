@@ -1,27 +1,9 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { 
-  CheckCircle2, 
-  XCircle, 
-  Clock, 
-  Calendar,
-  CalendarRange,
-  Search,
-  Filter,
-  Download,
-  X,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
-  FileSearch,
-  Maximize2,
-  Minimize2,
-  ClipboardList
-} from 'lucide-react';
+import { CheckCircle2, XCircle, Clock, Calendar, CalendarRange, Search, Filter, Download, X, ArrowUpDown, ArrowUp, ArrowDown, FileSearch, Maximize2, Minimize2, ClipboardList } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useData } from '../DataContext';
-
-import { AppUser } from '../types';
-
-interface Payment { accountId: string; owner: string; dateTime: string; amount: number; status: 'Scheduled' | 'Succeeded' | 'Declined' | 'Failed' | 'Recovered' | 'Rescheduled' | 'Unrecoverable' | 'Broken Promise'; rawDate: Date; ppaAuditStatus?: string; }
+import { AppUser, Payment } from '../types';
+import { sheetService } from '../services/sheetService';
 const OWNERS = ["Arianne Sanchez", "Sophia Smith", "Penelope Williams", "Mary Smith", "Kim Park", "Karen Justice", "Elizabeth Harris", "Chris Reed", "Chase Schaffer", "Charles Phillips"];
 
 const formatCurrency = (val: number) => `$${(Number(val) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -60,7 +42,10 @@ const PaymentTable: React.FC<{
   isLoading?: boolean;
   isMaximized?: boolean;
   onToggleMaximize?: () => void;
-}> = ({ title, data: initialData, type, canExport, isLoading, isMaximized, onToggleMaximize }) => {
+  currentUser: AppUser;
+  refreshData: () => void;
+}> = ({ title, data: initialData, type, canExport, isLoading, isMaximized, onToggleMaximize, currentUser, refreshData }) => {
+  const { postdates } = useData();
   const [filterText, setFilterText] = useState('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
@@ -235,7 +220,7 @@ const PaymentTable: React.FC<{
           <tbody className="divide-y divide-border-subtle">
             {isLoading && initialData.length === 0 ? (
               <tr>
-                <td colSpan={type === 'processed' ? 5 : (type === 'scheduled' ? 5 : 4)} className="px-6 py-20">
+                <td colSpan={type === 'processed' ? 5 : (type === 'scheduled' ? 5 : 5)} className="px-6 py-20">
                   <div className="flex flex-col items-center justify-center text-text-muted w-full">
                     <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
                     <p className="text-[12px] font-black uppercase tracking-[0.2em] animate-pulse">Fetching records...</p>
@@ -268,7 +253,7 @@ const PaymentTable: React.FC<{
                     </td>
                   )}
                 </tr>
-              ))) : (<tr><td colSpan={type === 'processed' ? 5 : (type === 'scheduled' ? 5 : 4)} className="px-6 py-20"><div className="flex flex-col items-center justify-center text-text-muted opacity-20 w-full"><FileSearch size={48} className="mb-3" /><p className="text-[12px] font-black uppercase tracking-[0.2em]">No records found</p></div></td></tr>)}
+              ))) : (<tr><td colSpan={type === 'processed' ? 5 : (type === 'scheduled' ? 5 : 5)} className="px-6 py-20"><div className="flex flex-col items-center justify-center text-text-muted opacity-20 w-full"><FileSearch size={48} className="mb-3" /><p className="text-[12px] font-black uppercase tracking-[0.2em]">No records found</p></div></td></tr>)}
           </tbody>
         </table>
       </div>
@@ -491,6 +476,8 @@ const PostdatesView: React.FC<{ canManageDocuments: boolean, currentUser: AppUse
           isLoading={isLoading}
           isMaximized={maximizedTable === 'scheduled'}
           onToggleMaximize={() => setMaximizedTable(maximizedTable === 'scheduled' ? null : 'scheduled')}
+          currentUser={currentUser}
+          refreshData={() => fetchPostdates(true)}
         />
         <PaymentTable 
           title="PROCESSED PAYMENTS" 
@@ -500,6 +487,8 @@ const PostdatesView: React.FC<{ canManageDocuments: boolean, currentUser: AppUse
           isLoading={isLoading}
           isMaximized={maximizedTable === 'processed'}
           onToggleMaximize={() => setMaximizedTable(maximizedTable === 'processed' ? null : 'processed')}
+          currentUser={currentUser}
+          refreshData={() => fetchPostdates(true)}
         />
       </div>
     </div>

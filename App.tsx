@@ -365,7 +365,7 @@ export default function App() {
       case 'postdates':
         return <PostdatesView canManageDocuments={currentUser.permissions.manageDocuments} currentUser={currentUser} onNavigate={resetToMainTab} />;
       case 'projection':
-        return <ProjectionDashboard />;
+        return <ProjectionDashboard currentUser={currentUser} />;
       case 'disposition':
         return <DispositionDashboard onBack={() => resetToMainTab('home')} currentUser={currentUser} />;
       case 'mirror':

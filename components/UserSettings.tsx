@@ -773,6 +773,7 @@ const UserSettings: React.FC<UserSettingsProps> = ({ isDarkMode, onToggleDarkMod
                               <h4 className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Tactical Operations</h4>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <ToggleItem label="Edit Projections" desc="Edit Weekly Targets" active={effectivePermissions.editProjections} onToggle={() => handlePermissionToggle('editProjections')} />
                                 <ToggleItem label="Manage RPC" desc="Edit/Delete Logs" active={effectivePermissions.manageRPCLogs} onToggle={() => handlePermissionToggle('manageRPCLogs')} />
                                 <ToggleItem label="Manage Clients" desc="Edit Client List" active={effectivePermissions.manageClients} onToggle={() => handlePermissionToggle('manageClients')} />
                                 <ToggleItem label="Manage Files" desc="Exports/Uploads" active={effectivePermissions.manageDocuments} onToggle={() => handlePermissionToggle('manageDocuments')} />

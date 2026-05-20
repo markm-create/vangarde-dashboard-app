@@ -29,10 +29,7 @@ export const USER_SCRIPT_URL = getValidUrl(
   import.meta.env.VITE_USER_LOGIN_SCRIPT_URL,
   "https://script.google.com/macros/s/AKfycbxT86FxniOBtG3kMZvugCSThMApwSnmXeUOtCSNmzfX7G1SLuQ9PjetGUy8IAaHsUP-2w/exec",
 );
-export const PROJECTION_SCRIPT_URL = getValidUrl(
-  import.meta.env.VITE_PROJECTION_SCRIPT_URL,
-  "https://script.google.com/macros/s/AKfycbyH8AGvP_vYcVXh_-JTYrfFFUg2-wPqHUf7VlDRKruRmkFPiECM-zkST-RLCejB8djh/exec",
-);
+export const PROJECTION_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzroRKitu4i5ngpjnra-hPQXcHQYelTAWoD3Fmdt1yRgMgrH__qSl58zqUiQLChZZzN1w/exec";
 export const DECLINE_RECOVERY_SCRIPT_URL = getValidUrl(
   import.meta.env.VITE_DECLINE_RECOVERY_SCRIPT_URL,
   "https://script.google.com/macros/s/AKfycbyqpiFO_lGT41RMQWzXJp1kU5ZOFDjzfB51rbIhe5uqZOigrQlATR4asqwaZ6aIleSYXg/exec",
@@ -205,6 +202,7 @@ export const DEFAULT_PERMISSIONS: AppPermissions = {
   viewOverduePayments: false,
   viewBillingAudit: false,
   viewRecovery: false,
+  editProjections: false,
   manageRPCLogs: false,
   manageClients: false,
   manageUsers: false,
@@ -254,6 +252,7 @@ export const getDefaultPermissionsForRole = (
       viewOverduePayments: true,
       viewBillingAudit: true,
       viewRecovery: true,
+      editProjections: true,
       manageRPCLogs: true,
       manageClients: true,
       manageUsers: true,
@@ -288,6 +287,7 @@ export const getDefaultPermissionsForRole = (
       viewOverduePayments: true,
       viewBillingAudit: true,
       viewRecovery: false,
+      editProjections: true,
       manageRPCLogs: true,
       manageClients: true,
       manageUsers: false,

@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-import { RPC_SCRIPT_URL, REMINDERS_SCRIPT_URL, POSTDATES_SCRIPT_URL, EXECUTIVE_SCRIPT_URL, HOME_SCRIPT_URL, COLLECTOR_SCRIPT_URL, MIRROR_SCRIPT_URL, CALL_PERFORMANCE_SCRIPT_URL, FLAGGED_ACCOUNTS_SCRIPT_URL, NEW_IMPORTS_SCRIPT_URL, OVERDUE_PAYMENTS_SCRIPT_URL, INVENTORY_SCRIPT_URL, COLLECTOR_INVENTORY_SCRIPT_URL, INDIVIDUAL_COLLECTOR_SCRIPT_URL, ACCOUNT_CLOSURE_AUDIT_SCRIPT_URL, BILLING_AUDIT_SCRIPT_URL, AUDIT_SCORING_SCRIPT_URL, COLLECTOR_HOME_SCRIPT_URL, NEW_ASSIGNED_ACCOUNTS_SCRIPT_URL } from '../constants';
+import { RPC_SCRIPT_URL, REMINDERS_SCRIPT_URL, POSTDATES_SCRIPT_URL, EXECUTIVE_SCRIPT_URL, HOME_SCRIPT_URL, COLLECTOR_SCRIPT_URL, MIRROR_SCRIPT_URL, CALL_PERFORMANCE_SCRIPT_URL, FLAGGED_ACCOUNTS_SCRIPT_URL, NEW_IMPORTS_SCRIPT_URL, OVERDUE_PAYMENTS_SCRIPT_URL, INVENTORY_SCRIPT_URL, COLLECTOR_INVENTORY_SCRIPT_URL, INDIVIDUAL_COLLECTOR_SCRIPT_URL, ACCOUNT_CLOSURE_AUDIT_SCRIPT_URL, BILLING_AUDIT_SCRIPT_URL, AUDIT_SCORING_SCRIPT_URL, COLLECTOR_HOME_SCRIPT_URL, NEW_ASSIGNED_ACCOUNTS_SCRIPT_URL, PROJECTION_SCRIPT_URL } from '../constants';
 
 export const sheetService = {
   async getCollectorInventoryData(collectorName: string) {
@@ -483,6 +483,50 @@ export const sheetService = {
     } catch (error) {
       console.error('Error fetching postdates data:', error);
       return { scheduled: [], processed: [] };
+    }
+  },
+
+  async getProjectionData() {
+    try {
+      if (!PROJECTION_SCRIPT_URL) return [];
+      const response = await fetch(PROJECTION_SCRIPT_URL, {
+        method: 'GET',
+        credentials: 'omit',
+        redirect: 'follow',
+        cache: 'no-store'
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const result = await response.json();
+      
+      if (result && result.status === 'error') {
+        throw new Error(result.message);
+      }
+      
+      return Array.isArray(result) ? result : (result.data || []);
+    } catch (error) {
+      console.error('Error fetching projection data:', error);
+      if (error instanceof Error && error.message.includes('Failed to fetch')) {
+        throw new Error('Failed to fetch: CORS error or network issue. Make sure the Google Apps Script is deployed as "Web app" with "Who has access" set to "Anyone".');
+      }
+      throw error;
+    }
+  },
+
+  async updateProjection(payload: any) {
+    try {
+      if (!PROJECTION_SCRIPT_URL) return false;
+      const response = await fetch(PROJECTION_SCRIPT_URL, {
+        method: 'POST',
+        credentials: 'omit',
+        redirect: 'follow', 
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'updateProjection', payload }),
+      });
+      const result = await response.json();
+      return result.status === 'success';
+    } catch (error) {
+      console.error('Error updating projection:', error);
+      return false;
     }
   },
 
