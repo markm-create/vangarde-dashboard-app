@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useData } from '../DataContext';
 import { BillingAudit } from '../types';
+import LoadingScreen from './LoadingScreen';
 
 const BillingAuditReport: React.FC<{ onBack: () => void; canExport: boolean }> = ({ onBack, canExport }) => {
   const { billingAudit: auditState, fetchBillingAudit } = useData();
@@ -29,6 +30,7 @@ const BillingAuditReport: React.FC<{ onBack: () => void; canExport: boolean }> =
     };
   });
   const [selectedCollectorFilter, setSelectedCollectorFilter] = useState('All');
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   
   const [sortConfig, setSortConfig] = useState<{ key: keyof BillingAudit; direction: 'asc' | 'desc' }>({
     key: 'overdueDate',
@@ -211,22 +213,50 @@ const BillingAuditReport: React.FC<{ onBack: () => void; canExport: boolean }> =
             <h2 className="text-sm font-black text-text-main uppercase tracking-widest">Audit Records</h2>
           </div>
           <div className="flex gap-2">
-            <div className="flex items-center gap-2 bg-surface-100 border border-border-subtle rounded-xl px-3 py-1.5 shadow-sm">
-                <ClipboardCheck size={14} className="text-text-muted" />
-                <input 
-                    type="date" 
-                    value={dateRange.start} 
-                    onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                    className="bg-transparent border-none text-[10px] font-bold text-text-main focus:ring-0 p-0 w-24"
-                />
-                <span className="text-text-muted text-[10px] font-bold px-1">TO</span>
-                <input 
-                    type="date" 
-                    value={dateRange.end} 
-                    onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                    className="bg-transparent border-none text-[10px] font-bold text-text-main focus:ring-0 p-0 w-24"
-                />
-                <ClipboardCheck size={14} className="text-text-muted" />
+            <div className="relative">
+              <button 
+                onClick={() => setIsCalendarOpen(!isCalendarOpen)}
+                className={`flex items-center gap-2 px-3 py-1.5 bg-surface-100 border border-border-subtle rounded-xl shadow-sm transition-all text-[11px] font-bold ${isCalendarOpen || (dateRange.start || dateRange.end) ? 'text-indigo-600 border-indigo-200 bg-indigo-50/50' : 'text-text-muted hover:text-indigo-600'}`}
+              >
+                <ClipboardCheck size={14} />
+                {dateRange.start && dateRange.end ? `${dateRange.start} to ${dateRange.end}` : "Select Dates"}
+              </button>
+              {isCalendarOpen && (
+                <div className="absolute right-0 top-full mt-2 w-72 bg-card border border-border-subtle rounded-2xl shadow-xl z-50 p-4 animate-in fade-in zoom-in-95 origin-top-right">
+                  <div className="flex justify-between items-center mb-3">
+                    <p className="text-[9px] font-black text-text-muted uppercase tracking-[0.2em]">Filter By Date</p>
+                    <button onClick={() => setDateRange({ start: '', end: '' })} className="text-[9px] font-black text-indigo-600 hover:text-rose-500 uppercase tracking-widest transition-colors">Reset</button>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <p className="text-[9px] font-black text-text-muted uppercase mb-1 ml-1 text-left">From</p>
+                        <input 
+                            type="date" 
+                            value={dateRange.start} 
+                            onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                            className="w-full bg-surface-100 border border-border-subtle rounded-xl text-[10px] font-bold text-text-main focus:ring-2 focus:ring-indigo-500/20 p-2"
+                        />
+                      </div>
+                      <div>
+                         <p className="text-[9px] font-black text-text-muted uppercase mb-1 ml-1 text-left">To</p>
+                         <input 
+                            type="date" 
+                            value={dateRange.end} 
+                            onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                            className="w-full bg-surface-100 border border-border-subtle rounded-xl text-[10px] font-bold text-text-main focus:ring-2 focus:ring-indigo-500/20 p-2"
+                        />
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setIsCalendarOpen(false)}
+                      className="w-full py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md hover:bg-indigo-700 transition-colors"
+                    >
+                      Apply Filter
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
             <select
                 value={selectedCollectorFilter}
@@ -243,13 +273,12 @@ const BillingAuditReport: React.FC<{ onBack: () => void; canExport: boolean }> =
             </div>
           </div>
         </div>
-        <div className="flex-1 overflow-auto scrollbar-thin">
-          {auditState.isLoading && !auditState.lastFetched ? (
-            <div className="flex flex-col items-center justify-center h-full text-text-muted">
-              <Loader2 size={40} className="animate-spin mb-4 text-indigo-600" />
-              <p className="text-xs font-black uppercase tracking-widest">Loading Records...</p>
-            </div>
-          ) : auditState.error ? (
+        <div className="flex-1 overflow-auto scrollbar-thin relative">
+          {auditState.isLoading && !auditState.lastFetched && (
+            <LoadingScreen message="Loading Billing Records..." isAbsolute />
+          )}
+          
+          {auditState.error ? (
             <div className="flex flex-col items-center justify-center h-full text-red-500 p-8 text-center">
               <p className="font-bold mb-4">{auditState.error}</p>
               <button onClick={() => fetchBillingAudit(true)} className="px-6 py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest">Retry Connection</button>

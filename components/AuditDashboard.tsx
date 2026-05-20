@@ -42,6 +42,7 @@ import { generateOnboardingAudits, generatePostdatesAudits, generateBillingAudit
 import { useData } from '../DataContext';
 import BillingAuditReport from './BillingAuditReport';
 import { AccountMonitoringAuditView } from './AccountMonitoringAuditView';
+import LoadingScreen from './LoadingScreen';
 
 type AuditViewType = 'overview' | 'onboarding' | 'postdates' | 'billing' | 'aee_rtp' | 'account_monitoring' | 'call_monitoring' | 'seven_eight_days' | 'rpc' | 'individual_flagged' | 'individual_onboarding';
 
@@ -102,7 +103,9 @@ const AuditDashboard: React.FC<{
     accountClosureAudit,
     fetchAccountClosureAudit,
     rpcAudits,
-    fetchRpcAudits
+    fetchRpcAudits,
+    accountMonitoringAudit,
+    fetchAccountMonitoringAudit
   } = useData();
   
   useEffect(() => {
@@ -131,7 +134,10 @@ const AuditDashboard: React.FC<{
     if (activeView === 'rpc') {
       fetchRpcAudits();
     }
-  }, [activeView, fetchFlaggedAccounts, fetchOnboardingAudits, fetchDeclineRecovery, fetchAccountClosureAudit, fetchRpcAudits]);
+    if (activeView === 'account_monitoring') {
+      fetchAccountMonitoringAudit();
+    }
+  }, [activeView, fetchFlaggedAccounts, fetchOnboardingAudits, fetchDeclineRecovery, fetchAccountClosureAudit, fetchRpcAudits, fetchAccountMonitoringAudit]);
 
   const onboardingData = useMemo(() => onboardingAudits.data, [onboardingAudits.data]);
   const postdatesData = useMemo(() => {
@@ -307,8 +313,24 @@ const AuditDashboard: React.FC<{
     case 'rpc': config = { data: rpcData, title: "RPC Audit", icon: UserCheck, color: "#14b8a6" }; break;
   }
 
-  const isLoading = activeView === 'onboarding' ? onboardingAudits.isLoading : (activeView === 'postdates' ? declineRecovery.isLoading : (activeView === 'aee_rtp' ? accountClosureAudit.isLoading : (activeView === 'rpc' ? rpcAudits.isLoading : false)));
-  const onRefresh = activeView === 'onboarding' ? () => fetchOnboardingAudits(true) : (activeView === 'postdates' ? () => fetchDeclineRecovery(true) : (activeView === 'aee_rtp' ? () => fetchAccountClosureAudit(true) : (activeView === 'rpc' ? () => fetchRpcAudits(true) : undefined)));
+  const isLoading = activeView === 'onboarding' ? onboardingAudits.isLoading : 
+                   (activeView === 'postdates' ? declineRecovery.isLoading : 
+                   (activeView === 'aee_rtp' ? accountClosureAudit.isLoading : 
+                   (activeView === 'rpc' ? rpcAudits.isLoading : 
+                   (activeView === 'account_monitoring' ? accountMonitoringAudit.isLoading : false))));
+  const onRefresh = activeView === 'onboarding' ? () => fetchOnboardingAudits(true) : 
+                    (activeView === 'postdates' ? () => fetchDeclineRecovery(true) : 
+                    (activeView === 'aee_rtp' ? () => fetchAccountClosureAudit(true) : 
+                    (activeView === 'rpc' ? () => fetchRpcAudits(true) : 
+                    (activeView === 'account_monitoring' ? () => fetchAccountMonitoringAudit(true) : undefined))));
+
+  if (activeView === 'account_monitoring') {
+    return <AccountMonitoringAuditView onBack={() => setActiveView('overview')} canExport={canManageDocuments} />;
+  }
+
+  if (isLoading && config.data && config.data.length === 0) {
+    return <LoadingScreen message={`Loading ${config.title}...`} isAbsolute />;
+  }
 
   return (<GenericAuditTable title={config.title} data={config.data} summaryData={config.summaryData} viewType={activeView} onBack={() => onNavigate ? window.history.back() : setActiveView('overview')} canExport={canManageDocuments} isLoading={isLoading} onRefresh={onRefresh} />);
 };
@@ -497,6 +519,7 @@ const StagnantAccountReport = ({
 
     return (
         <div className="p-8 space-y-8 bg-app h-screen max-h-screen flex flex-col animate-in fade-in duration-500 font-sans overflow-hidden">
+            {isLoading && data.length === 0 && <LoadingScreen message="Loading Flagged Accounts..." isAbsolute />}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 shrink-0">
                 <div className="flex items-center gap-4">
                     <button onClick={onBack} className="p-2.5 rounded-2xl bg-card border border-border-subtle text-text-muted hover:text-indigo-600 shadow-sm transition-all group">
@@ -595,9 +618,14 @@ const StagnantAccountReport = ({
 
             <div className={`flex-1 bg-card rounded-[2rem] border border-border-subtle shadow-sm overflow-hidden flex flex-col min-h-0 transition-all duration-300 ${isFullScreen ? 'fixed inset-0 z-[100] m-0 rounded-none' : ''}`}>
                 <div className="p-6 border-b border-border-subtle flex justify-between items-center bg-card shrink-0">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 relative">
                         <div className="p-2 rounded-xl bg-surface-100 text-text-muted"><CalendarDays size={18} /></div>
                         <h2 className="text-sm font-black text-text-main uppercase tracking-widest">Breakdown</h2>
+                        {isLoading && data.length > 0 && (
+                          <div className="absolute -right-8 top-1/2 -translate-y-1/2">
+                            <RefreshCw size={14} className="animate-spin text-indigo-600" />
+                          </div>
+                        )}
                     </div>
                     <div className="flex gap-2">
                         <div className="flex items-center gap-2 bg-surface-100 border border-border-subtle rounded-xl px-3 py-1.5 shadow-sm">
@@ -879,6 +907,7 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   
   const [dateRange, setDateRange] = useState(() => {
     const now = new Date();
@@ -1570,22 +1599,50 @@ const GenericAuditTable = ({ title, data: rawData, summaryData, viewType, onBack
              </div>
               <div className="flex flex-wrap items-center gap-2">
                 {String(viewType).toLowerCase() !== 'onboarding' && (
-                  <div className="flex items-center gap-2 bg-surface-100 border border-border-subtle rounded-xl px-3 py-1.5 shadow-sm">
-                      <CalendarDays size={14} className="text-text-muted" />
-                      <input 
-                          type="date" 
-                          value={dateRange.start} 
-                          onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                          className="bg-transparent border-none text-[10px] font-bold text-text-main focus:ring-0 p-0 w-24"
-                      />
-                      <span className="text-text-muted text-[10px] font-bold px-1">TO</span>
-                      <input 
-                          type="date" 
-                          value={dateRange.end} 
-                          onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                          className="bg-transparent border-none text-[10px] font-bold text-text-main focus:ring-0 p-0 w-24"
-                      />
-                      <CalendarDays size={14} className="text-text-muted" />
+                  <div className="relative">
+                    <button 
+                      onClick={() => setIsCalendarOpen(!isCalendarOpen)}
+                      className={`flex items-center gap-2 px-3 py-1.5 bg-surface-100 border border-border-subtle rounded-xl shadow-sm transition-all text-[11px] font-bold ${isCalendarOpen || (dateRange.start || dateRange.end) ? 'text-indigo-600 border-indigo-200 bg-indigo-50/50' : 'text-text-muted hover:text-indigo-600'}`}
+                    >
+                      <CalendarDays size={14} />
+                      {dateRange.start && dateRange.end ? `${dateRange.start} to ${dateRange.end}` : "Select Dates"}
+                    </button>
+                    {isCalendarOpen && (
+                      <div className="absolute right-0 top-full mt-2 w-72 bg-card border border-border-subtle rounded-2xl shadow-xl z-50 p-4 animate-in fade-in zoom-in-95 origin-top-right">
+                        <div className="flex justify-between items-center mb-3">
+                          <p className="text-[9px] font-black text-text-muted uppercase tracking-[0.2em]">Filter By Date</p>
+                          <button onClick={() => setDateRange({ start: '', end: '' })} className="text-[9px] font-black text-indigo-600 hover:text-rose-500 uppercase tracking-widest transition-colors">Reset</button>
+                        </div>
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <p className="text-[9px] font-black text-text-muted uppercase mb-1 ml-1 text-left">From</p>
+                              <input 
+                                  type="date" 
+                                  value={dateRange.start} 
+                                  onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                                  className="w-full bg-surface-100 border border-border-subtle rounded-xl text-[10px] font-bold text-text-main focus:ring-2 focus:ring-indigo-500/20 p-2"
+                              />
+                            </div>
+                            <div>
+                               <p className="text-[9px] font-black text-text-muted uppercase mb-1 ml-1 text-left">To</p>
+                               <input 
+                                  type="date" 
+                                  value={dateRange.end} 
+                                  onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                                  className="w-full bg-surface-100 border border-border-subtle rounded-xl text-[10px] font-bold text-text-main focus:ring-2 focus:ring-indigo-500/20 p-2"
+                              />
+                            </div>
+                          </div>
+                          <button 
+                            onClick={() => setIsCalendarOpen(false)}
+                            className="w-full py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md hover:bg-indigo-700 transition-colors"
+                          >
+                            Apply Filter
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
                 <select

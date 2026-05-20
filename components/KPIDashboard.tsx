@@ -14,6 +14,7 @@ import {
 } from 'recharts';
 import { COLLECTORS, KPI_SCRIPT_URL } from '../constants';
 import { useData } from '../DataContext';
+import LoadingScreen from './LoadingScreen';
 
 type TabType = 'collection' | 'performance' | 'postdates' | 'charts';
 type SortConfig = { key: string; direction: 'asc' | 'desc' } | null;
@@ -441,14 +442,7 @@ const KPIDashboard: React.FC = () => {
 
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col">
         <div className="flex-1 overflow-auto relative min-h-[400px]">
-          {kpi.isLoading && (
-            <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm">
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-300">Loading KPI data...</p>
-              </div>
-            </div>
-          )}
+          {kpi.isLoading && kpi.data.length === 0 && <LoadingScreen message="Loading KPI data..." isAbsolute />}
           
           {kpi.error && (
             <div className="absolute inset-0 z-50 flex items-center justify-center bg-white dark:bg-slate-800">

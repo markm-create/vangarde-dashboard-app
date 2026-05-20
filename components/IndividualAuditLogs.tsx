@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { Collector } from '../types';
 import { useData } from '../DataContext';
+import LoadingScreen from './LoadingScreen';
 
 type ViewMode = 'overview' | 'breakdown-onboarding' | 'breakdown-flagged' | 'breakdown-billing';
 
@@ -400,9 +401,13 @@ const IndividualAuditLogs: React.FC<{
     return stagnantData.length;
   }, [viewMode, onboardingData, billingData, stagnantData]);
 
+  const anyLoading = onboardingAudits.isLoading || flaggedAccounts.isLoading || billingAudit.isLoading || auditScoring.isLoading;
+  const anyData = onboardingData.length > 0 || stagnantData.length > 0 || billingData.length > 0 || auditScoring.data;
+
   if (viewMode === 'overview') {
     return (
-      <div className="p-8 space-y-10 bg-app min-h-screen animate-in fade-in duration-500 font-sans pb-24">
+      <div className="p-8 space-y-10 bg-app min-h-screen animate-in fade-in duration-500 font-sans pb-24 relative">
+        {anyLoading && !anyData && <LoadingScreen message="Analyzing Audit Data..." isAbsolute />}
         <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-6">
           <div className="flex items-center gap-4">
             <button onClick={onBack} className="p-2.5 rounded-2xl bg-card border border-border-subtle text-text-muted hover:text-indigo-600 shadow-sm transition-all group">

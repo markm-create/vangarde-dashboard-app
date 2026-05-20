@@ -215,7 +215,7 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
           if (p.status === 'Succeeded') {
             succeeded++;
             succeededAmount += (p.amount || 0);
-          } else if (p.status === 'Declined' || p.status === 'Failed' || p.status === 'Unrecoverable' || p.status === 'Recovered' || p.status === 'Rescheduled') {
+          } else if (p.status === 'Declined' || p.status === 'Failed' || p.status === 'Broken Promise' || p.status === 'Unrecoverable' || p.status === 'Recovered' || p.status === 'Rescheduled') {
             declined++;
             declinedAmount += (p.amount || 0);
           }

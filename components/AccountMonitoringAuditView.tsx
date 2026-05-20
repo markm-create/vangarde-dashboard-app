@@ -1,120 +1,19 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import {ArrowLeft, Search, Download, FileText, ArrowUpDown, ArrowUp, ArrowDown, ClipboardCheck, X} from 'lucide-react';
+import {ArrowLeft, Search, Download, FileText, ArrowUpDown, ArrowUp, ArrowDown, ClipboardCheck, RefreshCw} from 'lucide-react';
 import html2pdf from 'html2pdf.js';
-import { ACCOUNT_MONITORING_AUDIT_SCRIPT_URL } from '../constants';
+import { useData } from '../DataContext';
+import LoadingScreen from './LoadingScreen';
 
 export const AccountMonitoringAuditView = ({ onBack, canExport }: { onBack: () => void, canExport: boolean }) => {
-  const [data, setData] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { accountMonitoringAudit, fetchAccountMonitoringAudit } = useData();
+  const data = accountMonitoringAudit.data;
+  const isLoading = accountMonitoringAudit.isLoading;
+  const error = accountMonitoringAudit.error;
 
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        if (!ACCOUNT_MONITORING_AUDIT_SCRIPT_URL || ACCOUNT_MONITORING_AUDIT_SCRIPT_URL.trim() === '') {
-           throw new Error("ACCOUNT_MONITORING_AUDIT_SCRIPT_URL is not configured.");
-        }
-        
-        // Fetch data from Google Apps Script
-        const response = await fetch(`${ACCOUNT_MONITORING_AUDIT_SCRIPT_URL}?action=getAuditLogs`);
-        if (!response.ok) {
-           throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const result = await response.json();
-        
-        if (result.status === 'success' && Array.isArray(result.data)) {
-           // Enrich and map data
-           const mappedData = result.data
-             .filter((row: any[]) => {
-               // Filter out empty rows and header rows (assuming Account Number is at index 1)
-               if (!row || row.length < 5) return false;
-               const accountNum = String(row[1] || '').trim().toLowerCase();
-               if (accountNum === '' || accountNum.includes('account number') || accountNum === 'account') return false;
-               return true;
-             })
-             .map((row: any[], index: number) => {
-             // Skip header if it exists and we're parsing row 0, but script should handle that
-             
-             // Mapping based on guidelines:
-             // A: Date Audited (0)
-             // B: Account Number (1)
-             // C: Collector Name (2)
-             // D: Client Name (3)
-             // E: Auditor Name (4)
-             // F: Account Touch (5)
-             // G: Account Status (6)
-             // H: Business Type (7)
-             // I: Phone Numbers (8)
-             // J: Initial Notice (9)
-             // K: Asset Affiliation (10)
-             // L: Tax Assessor (11)
-             // M: Contact Relatives (12)
-             // N: Call All Phones (13)
-             // O: Final Demand (14)
-             // P: Third-Party Notice (15)
-             // Q: Score (16)
-             // R: Audit Comments (17)
-             
-             const rawScore = String(row[16] || 0).replace(/[^0-9]/g, '');
-             const parsedScore = parseInt(rawScore, 10);
-               
-             const formatDate = (dateValue: any) => {
-               if (!dateValue) return 'Unknown';
-               try {
-                 const date = new Date(dateValue);
-                 if (isNaN(date.getTime())) return String(dateValue);
-                 return date.toLocaleDateString('en-US', {
-                   year: 'numeric',
-                   month: 'short',
-                   day: 'numeric'
-                 });
-               } catch (e) {
-                 return String(dateValue);
-               }
-             };
+    fetchAccountMonitoringAudit();
+  }, [fetchAccountMonitoringAudit]);
 
-             return {
-               id: `audit-${index}`,
-               rawDate: row[0],
-               dateAudited: formatDate(row[0]),
-               accountNumber: row[1] || 'Unknown',
-               agentName: row[2] || 'Unknown',
-               clientName: row[3] || 'Unknown',
-               auditorName: row[4] || 'Unknown',
-               comment: row[17] || '',
-               score: isNaN(parsedScore) ? 0 : parsedScore,
-               criteria: {
-                 accountTouch: row[5] || 'None',
-                 correctStatus: row[6] || 'No',
-                 correctBusinessStatus: row[7] || 'No',
-                 phoneNumbers: row[8] || 'No',
-                 noticeRepSent: row[9] || 'No',
-                 assetAffiliation: row[10] || 'No',
-                 taxAssessor: row[11] || 'No',
-                 contactRelatives: row[12] || 'No',
-                 callAllPhones: row[13] || 'No',
-                 finalDemand: row[14] || 'No',
-                 requestThirdParty: row[15] || 'No',
-               }
-             };
-           });
-           setData(mappedData);
-        } else {
-           throw new Error(result.message || "Failed to fetch data");
-        }
-      } catch (err: any) {
-        console.error("Error fetching audit logs:", err);
-        setError(err.message || "An unexpected error occurred");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchData();
-  }, []);
 
   const [filterText, setFilterText] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: 'dateAudited', direction: 'desc' });
@@ -130,6 +29,7 @@ export const AccountMonitoringAuditView = ({ onBack, canExport }: { onBack: () =
     };
   });
   const [selectedCollectorFilter, setSelectedCollectorFilter] = useState('All');
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const collectorOptions = useMemo(() => {
     const collectors = new Set<string>();
@@ -225,13 +125,8 @@ export const AccountMonitoringAuditView = ({ onBack, canExport }: { onBack: () =
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="p-8 h-screen flex flex-col items-center justify-center bg-app">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
-        <p className="text-text-muted font-medium">Loading Audit Logs...</p>
-      </div>
-    );
+  if (isLoading && data.length === 0) {
+    return <LoadingScreen message="Loading Account Monitoring Audits..." isAbsolute />;
   }
 
   if (error) {
@@ -388,6 +283,14 @@ export const AccountMonitoringAuditView = ({ onBack, canExport }: { onBack: () =
               </div>
           </div>
           <div className="flex items-center gap-3">
+              <button 
+                  onClick={() => fetchAccountMonitoringAudit(true)} 
+                  disabled={isLoading}
+                  className={`p-2.5 rounded-2xl bg-card border border-border-subtle text-text-muted hover:text-indigo-600 shadow-sm transition-all ${isLoading ? 'opacity-50' : 'active:scale-95'}`}
+                  title="Sync Data"
+              >
+                  <RefreshCw size={20} className={isLoading ? 'animate-spin' : ''} />
+              </button>
               {canExport && (
                   <button onClick={handleExport} className="flex items-center justify-center gap-2 px-6 py-2 bg-[#4f46e5] text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#4338ca] shadow-lg active:scale-95 transition-all">
                       <Download size={14} /> Export CSV
@@ -398,27 +301,60 @@ export const AccountMonitoringAuditView = ({ onBack, canExport }: { onBack: () =
 
       <div className={`flex-1 bg-card rounded-[2rem] border border-border-subtle shadow-sm overflow-hidden flex flex-col min-h-0 transition-all duration-300`}>
           <div className="p-6 border-b border-border-subtle flex justify-between items-center bg-card shrink-0">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 relative">
                   <div className="p-2 rounded-xl bg-surface-100 text-text-muted"><ClipboardCheck size={18} /></div>
                   <h2 className="text-sm font-black text-text-main uppercase tracking-widest">Audits List</h2>
+                  {isLoading && data.length > 0 && (
+                    <div className="absolute -right-8 top-1/2 -translate-y-1/2">
+                      <RefreshCw size={14} className="animate-spin text-indigo-600" />
+                    </div>
+                  )}
               </div>
               <div className="flex gap-2">
-                  <div className="flex items-center gap-2 bg-surface-100 border border-border-subtle rounded-xl px-3 py-1.5 shadow-sm">
-                      <ClipboardCheck size={14} className="text-text-muted" />
-                      <input 
-                          type="date" 
-                          value={dateRange.start} 
-                          onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                          className="bg-transparent border-none text-[10px] font-bold text-text-main focus:ring-0 p-0 w-24"
-                      />
-                      <span className="text-text-muted text-[10px] font-bold px-1">TO</span>
-                      <input 
-                          type="date" 
-                          value={dateRange.end} 
-                          onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                          className="bg-transparent border-none text-[10px] font-bold text-text-main focus:ring-0 p-0 w-24"
-                      />
-                      <ClipboardCheck size={14} className="text-text-muted" />
+                  <div className="relative">
+                    <button 
+                      onClick={() => setIsCalendarOpen(!isCalendarOpen)}
+                      className={`flex items-center gap-2 px-3 py-1.5 bg-surface-100 border border-border-subtle rounded-xl shadow-sm transition-all text-[11px] font-bold ${isCalendarOpen || (dateRange.start || dateRange.end) ? 'text-indigo-600 border-indigo-200 bg-indigo-50/50' : 'text-text-muted hover:text-indigo-600'}`}
+                    >
+                      <ClipboardCheck size={14} />
+                      {dateRange.start && dateRange.end ? `${dateRange.start} to ${dateRange.end}` : "Select Dates"}
+                    </button>
+                    {isCalendarOpen && (
+                      <div className="absolute right-0 top-full mt-2 w-72 bg-card border border-border-subtle rounded-2xl shadow-xl z-50 p-4 animate-in fade-in zoom-in-95 origin-top-right">
+                        <div className="flex justify-between items-center mb-3">
+                          <p className="text-[9px] font-black text-text-muted uppercase tracking-[0.2em]">Filter By Date</p>
+                          <button onClick={() => setDateRange({ start: '', end: '' })} className="text-[9px] font-black text-indigo-600 hover:text-rose-500 uppercase tracking-widest transition-colors">Reset</button>
+                        </div>
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <p className="text-[9px] font-black text-text-muted uppercase mb-1 ml-1 text-left">From</p>
+                              <input 
+                                  type="date" 
+                                  value={dateRange.start} 
+                                  onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                                  className="w-full bg-surface-100 border border-border-subtle rounded-xl text-[10px] font-bold text-text-main focus:ring-2 focus:ring-indigo-500/20 p-2"
+                              />
+                            </div>
+                            <div>
+                               <p className="text-[9px] font-black text-text-muted uppercase mb-1 ml-1 text-left">To</p>
+                               <input 
+                                  type="date" 
+                                  value={dateRange.end} 
+                                  onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                                  className="w-full bg-surface-100 border border-border-subtle rounded-xl text-[10px] font-bold text-text-main focus:ring-2 focus:ring-indigo-500/20 p-2"
+                              />
+                            </div>
+                          </div>
+                          <button 
+                            onClick={() => setIsCalendarOpen(false)}
+                            className="w-full py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md hover:bg-indigo-700 transition-colors"
+                          >
+                            Apply Filter
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <select
                       value={selectedCollectorFilter}

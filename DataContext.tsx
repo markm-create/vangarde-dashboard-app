@@ -1,14 +1,14 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { sheetService } from './services/sheetService';
 import { ExecutiveData, HomeData, Collector, AuditScoringData } from './types';
-import { PROJECTION_SCRIPT_URL, ONBOARDING_AUDIT_SCRIPT_URL, ACCOUNT_CLOSURE_AUDIT_SCRIPT_URL, DECLINE_RECOVERY_SCRIPT_URL, KPI_SCRIPT_URL, RPC_AUDIT_SCRIPT_URL } from './constants';
+import { PROJECTION_SCRIPT_URL, ONBOARDING_AUDIT_SCRIPT_URL, ACCOUNT_CLOSURE_AUDIT_SCRIPT_URL, DECLINE_RECOVERY_SCRIPT_URL, KPI_SCRIPT_URL, RPC_AUDIT_SCRIPT_URL, ACCOUNT_MONITORING_AUDIT_SCRIPT_URL } from './constants';
 
 interface Payment { 
   accountId: string; 
   owner: string; 
   dateTime: string; 
   amount: number; 
-  status: 'Scheduled' | 'Succeeded' | 'Declined' | 'Failed' | 'Recovered' | 'Rescheduled' | 'Unrecoverable'; 
+  status: 'Scheduled' | 'Succeeded' | 'Declined' | 'Failed' | 'Recovered' | 'Rescheduled' | 'Unrecoverable' | 'Broken Promise'; 
   rawDate: Date; 
 }
 
@@ -149,6 +149,12 @@ interface DataContextType {
     lastFetched: number | null;
     error: string | null;
   };
+  accountMonitoringAudit: {
+    data: any[];
+    isLoading: boolean;
+    lastFetched: number | null;
+    error: string | null;
+  };
   auditScoring: {
     data: AuditScoringData | null;
     isLoading: boolean;
@@ -198,6 +204,7 @@ interface DataContextType {
   fetchRpcAudits: (force?: boolean) => Promise<void>;
   fetchDeclineRecovery: (force?: boolean) => Promise<void>;
   fetchBillingAudit: (force?: boolean) => Promise<void>;
+  fetchAccountMonitoringAudit: (force?: boolean) => Promise<void>;
   fetchAuditScoring: (collectorName: string, force?: boolean) => Promise<void>;
   fetchCollectorHome: (collectorName: string, force?: boolean) => Promise<void>;
   fetchNewAssignedAccounts: (force?: boolean) => Promise<void>;
@@ -338,6 +345,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [billingAudit, setBillingAudit] = useState<DataContextType['billingAudit']>({
+    data: [],
+    isLoading: false,
+    lastFetched: null,
+    error: null,
+  });
+
+  const [accountMonitoringAudit, setAccountMonitoringAudit] = useState<DataContextType['accountMonitoringAudit']>({
     data: [],
     isLoading: false,
     lastFetched: null,
@@ -1008,6 +1022,92 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [billingAudit.lastFetched]);
 
+  const fetchAccountMonitoringAudit = useCallback(async (force = false) => {
+    if (!force && accountMonitoringAudit.lastFetched && Date.now() - accountMonitoringAudit.lastFetched < 300000) {
+      return;
+    }
+    
+    setAccountMonitoringAudit(prev => ({ ...prev, isLoading: true, error: null }));
+    try {
+      const scriptUrl = ACCOUNT_MONITORING_AUDIT_SCRIPT_URL;
+      
+      if (!scriptUrl) {
+         throw new Error("ACCOUNT_MONITORING_AUDIT_SCRIPT_URL is not configured.");
+      }
+
+      const response = await fetch(`${scriptUrl}?action=getAuditLogs`);
+      if (!response.ok) {
+         throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.status === 'success' && Array.isArray(result.data)) {
+         const mappedData = result.data
+           .filter((row: any[]) => {
+             if (!row || row.length < 5) return false;
+             const accountNum = String(row[1] || '').trim().toLowerCase();
+             if (accountNum === '' || accountNum.includes('account number') || accountNum === 'account') return false;
+             return true;
+           })
+           .map((row: any[], index: number) => {
+             const rawScore = String(row[16] || 0).replace(/[^0-9]/g, '');
+             const parsedScore = parseInt(rawScore, 10);
+               
+             const formatDate = (dateValue: any) => {
+               if (!dateValue) return 'Unknown';
+               try {
+                 const date = new Date(dateValue);
+                 if (isNaN(date.getTime())) return String(dateValue);
+                 return date.toLocaleDateString('en-US', {
+                   year: 'numeric', month: 'short', day: 'numeric'
+                 });
+               } catch (e) {
+                 return String(dateValue);
+               }
+             };
+
+             return {
+               id: `audit-${index}`,
+               rawDate: row[0],
+               dateAudited: formatDate(row[0]),
+               accountNumber: row[1] || 'Unknown',
+               agentName: row[2] || 'Unknown',
+               clientName: row[3] || 'Unknown',
+               auditorName: row[4] || 'Unknown',
+               comment: row[17] || '',
+               score: isNaN(parsedScore) ? 0 : parsedScore,
+               criteria: {
+                 accountTouch: row[5] || 'None',
+                 correctStatus: row[6] || 'No',
+                 correctBusinessStatus: row[7] || 'No',
+                 phoneNumbers: row[8] || 'No',
+                 noticeRepSent: row[9] || 'No',
+                 assetAffiliation: row[10] || 'No',
+                 taxAssessor: row[11] || 'No',
+                 contactRelatives: row[12] || 'No',
+                 callAllPhones: row[13] || 'No',
+                 finalDemand: row[14] || 'No',
+                 requestThirdParty: row[15] || 'No',
+               }
+             };
+           });
+           
+         setAccountMonitoringAudit({
+           data: mappedData,
+           isLoading: false,
+           lastFetched: Date.now(),
+           error: null
+         });
+      } else {
+         throw new Error(result.message || "Failed to fetch data");
+      }
+    } catch (error) {
+      console.error('Error fetching account monitoring audit data:', error);
+      setAccountMonitoringAudit(prev => ({ ...prev, isLoading: false, error: (error as Error).message }));
+    }
+  }, [accountMonitoringAudit.lastFetched]);
+
   const [lastScoredCollector, setLastScoredCollector] = useState<string | null>(null);
 
   const fetchAuditScoring = useCallback(async (collectorName: string, force = false) => {
@@ -1152,6 +1252,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       rpcAudits,
       declineRecovery,
       billingAudit,
+      accountMonitoringAudit,
       auditScoring,
       collectorHome,
       newAssignedAccounts,
@@ -1177,6 +1278,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       fetchRpcAudits,
       fetchDeclineRecovery,
       fetchBillingAudit,
+      fetchAccountMonitoringAudit,
       fetchAuditScoring,
       fetchCollectorHome,
       fetchNewAssignedAccounts,

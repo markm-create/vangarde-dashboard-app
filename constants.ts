@@ -136,12 +136,16 @@ export const AUDIT_SCORING_SCRIPT_URL: string =
   "https://script.google.com/macros/s/AKfycbzuCY3PXXVshOhB2aKrPbaTx7khR_8Zha3aPlCuAeRP_2OaQjLgvjMGl0kZwIEpjFqGIg/exec";
 
 // Account Monitoring Audit Script URL
-export const ACCOUNT_MONITORING_AUDIT_SCRIPT_URL: string =
-  "https://script.google.com/macros/s/AKfycbwtnQ2B1i6yvcbZ29-D1FWaVzsLz14sQzFT1TTJGBnzK2oyPUcTp01oafeMw-VTbaQz/exec";
+export const ACCOUNT_MONITORING_AUDIT_SCRIPT_URL: string = getValidUrl(
+  import.meta.env.VITE_ACCOUNT_MONITORING_AUDIT_SCRIPT_URL,
+  "https://script.google.com/macros/s/AKfycbwtnQ2B1i6yvcbZ29-D1FWaVzsLz14sQzFT1TTJGBnzK2oyPUcTp01oafeMw-VTbaQz/exec",
+);
 
 // KPI Dashboard Script URL
-export const KPI_SCRIPT_URL: string =
-  "https://script.google.com/macros/s/AKfycbw2-0NgTNlwg4OISWXS4Q9A2Glmhg8tBZjAVoXkrYc28V-yBz905pobt4kndKH18fImbw/exec";
+export const KPI_SCRIPT_URL: string = getValidUrl(
+  import.meta.env.VITE_KPI_SCRIPT_URL,
+  "https://script.google.com/macros/s/AKfycbw2-0NgTNlwg4OISWXS4Q9A2Glmhg8tBZjAVoXkrYc28V-yBz905pobt4kndKH18fImbw/exec",
+);
 
 // Initial Campaign Script URL
 export const INITIAL_CAMPAIGN_SCRIPT_URL: string = getValidUrl(

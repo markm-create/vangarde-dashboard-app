@@ -21,7 +21,7 @@ import { useData } from '../DataContext';
 
 import { AppUser } from '../types';
 
-interface Payment { accountId: string; owner: string; dateTime: string; amount: number; status: 'Scheduled' | 'Succeeded' | 'Declined' | 'Failed' | 'Recovered' | 'Rescheduled' | 'Unrecoverable'; rawDate: Date; ppaAuditStatus?: string; }
+interface Payment { accountId: string; owner: string; dateTime: string; amount: number; status: 'Scheduled' | 'Succeeded' | 'Declined' | 'Failed' | 'Recovered' | 'Rescheduled' | 'Unrecoverable' | 'Broken Promise'; rawDate: Date; ppaAuditStatus?: string; }
 const OWNERS = ["Arianne Sanchez", "Sophia Smith", "Penelope Williams", "Mary Smith", "Kim Park", "Karen Justice", "Elizabeth Harris", "Chris Reed", "Chase Schaffer", "Charles Phillips"];
 
 const formatCurrency = (val: number) => `$${(Number(val) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -81,7 +81,7 @@ const PaymentTable: React.FC<{
   }, []);
 
   const filterOptions = useMemo(() => {
-    if (type === 'processed') return ['All', 'Succeeded', 'Failed', 'Recovered', 'Rescheduled', 'Unrecoverable'];
+    if (type === 'processed') return ['All', 'Succeeded', 'Failed', 'Broken Promise', 'Recovered', 'Rescheduled', 'Unrecoverable'];
     const ppaSet = new Set<string>();
     initialData.forEach(item => { if (item.ppaAuditStatus) ppaSet.add(item.ppaAuditStatus); });
     return ['All', ...Array.from(ppaSet)].sort();
@@ -93,7 +93,7 @@ const PaymentTable: React.FC<{
     if (ownerFilter !== 'All') data = data.filter(item => item.owner === ownerFilter);
     if (type === 'processed' && statusFilter !== 'All') {
       if (statusFilter === 'Failed') {
-        data = data.filter(item => item.status === 'Failed' || item.status === 'Declined');
+        data = data.filter(item => item.status === 'Failed' || item.status === 'Declined' || item.status === 'Broken Promise');
       } else {
         data = data.filter(item => item.status === statusFilter);
       }
@@ -257,6 +257,7 @@ const PaymentTable: React.FC<{
                         row.status === 'Recovered' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-500' :
                         row.status === 'Rescheduled' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-500' :
                         row.status === 'Unrecoverable' ? 'bg-slate-100 dark:bg-slate-800 text-slate-500' :
+                        row.status === 'Broken Promise' ? 'bg-rose-100 dark:bg-rose-900/50 text-rose-700 font-black' :
                         'bg-rose-50 dark:bg-rose-900/30 text-rose-500'
                       }`}>
                         {row.status}
@@ -335,7 +336,7 @@ const PostdatesView: React.FC<{ canManageDocuments: boolean, currentUser: AppUse
     });
 
     const succeeded = currentMonthProcessed.filter(p => p.status === 'Succeeded');
-    const declined = currentMonthProcessed.filter(p => p.status === 'Declined' || p.status === 'Failed' || p.status === 'Unrecoverable' || p.status === 'Recovered' || p.status === 'Rescheduled');
+    const declined = currentMonthProcessed.filter(p => p.status === 'Declined' || p.status === 'Failed' || p.status === 'Broken Promise' || p.status === 'Unrecoverable' || p.status === 'Recovered' || p.status === 'Rescheduled');
     
     const totalSucceeded = succeeded.reduce((sum, p) => sum + p.amount, 0);
     const totalDeclined = declined.reduce((sum, p) => sum + p.amount, 0);
@@ -346,7 +347,7 @@ const PostdatesView: React.FC<{ canManageDocuments: boolean, currentUser: AppUse
       .reduce((sum, p) => sum + p.amount, 0);
     
     const todayDeclined = currentMonthProcessed
-      .filter(p => (p.status === 'Declined' || p.status === 'Failed' || p.status === 'Unrecoverable' || p.status === 'Recovered' || p.status === 'Rescheduled') && new Date(p.rawDate).toDateString() === todayStr)
+      .filter(p => (p.status === 'Declined' || p.status === 'Failed' || p.status === 'Broken Promise' || p.status === 'Unrecoverable' || p.status === 'Recovered' || p.status === 'Rescheduled') && new Date(p.rawDate).toDateString() === todayStr)
       .reduce((sum, p) => sum + p.amount, 0);
 
     // Total Remaining: scheduled for the remainder of the active month
