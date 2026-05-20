@@ -67,7 +67,10 @@ const PaymentTable: React.FC<{
   const [ownerFilter, setOwnerFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
   const [dateFilter, setDateFilter] = useState({ start: '', end: '' });
-  const [sortConfig, setSortConfig] = useState<{ key: keyof Payment; direction: 'asc' | 'desc' }>({ key: 'rawDate', direction: 'desc' });
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Payment; direction: 'asc' | 'desc' }>({ 
+    key: 'rawDate', 
+    direction: type === 'scheduled' ? 'asc' : 'desc' 
+  });
   const filterRef = useRef<HTMLDivElement>(null);
   const calendarRef = useRef<HTMLDivElement>(null);
 
@@ -118,8 +121,8 @@ const PaymentTable: React.FC<{
       });
     }
     data.sort((a, b) => {
-      let aVal = sortConfig.key === 'dateTime' ? a.rawDate.getTime() : a[sortConfig.key];
-      let bVal = sortConfig.key === 'dateTime' ? b.rawDate.getTime() : b[sortConfig.key];
+      let aVal = (sortConfig.key === 'dateTime' || sortConfig.key === 'rawDate') ? a.rawDate.getTime() : a[sortConfig.key];
+      let bVal = (sortConfig.key === 'dateTime' || sortConfig.key === 'rawDate') ? b.rawDate.getTime() : b[sortConfig.key];
       if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
       if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
       return 0;
