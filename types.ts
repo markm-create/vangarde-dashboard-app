@@ -22,6 +22,7 @@ export interface AgentProjection {
 export interface Payment {
   id?: string | number;
   accountId: string;
+  accountLink?: string | null;
   owner: string;
   dateTime: string;
   amount: number;
@@ -29,6 +30,9 @@ export interface Payment {
   rawDate: Date;
   ppaAuditStatus?: string;
   originalRowIndex?: number;
+  clientShortName?: string;
+  merchantName?: string;
+  accountStatus?: string;
 }
 
 export interface RPCLog {

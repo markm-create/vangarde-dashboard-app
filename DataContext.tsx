@@ -7,9 +7,18 @@ interface DataContextType {
   postdates: {
     scheduled: Payment[];
     processed: Payment[];
-    totalRecovered: number;
-    weeklyStart: number;
-    monthlyStart: number;
+    summary: {
+      totalSucceeded: number;
+      totalDeclined: number;
+      totalRecovered: number;
+      totalSucceededAndRecovered: number;
+      totalProcessed: number;
+      todaySucceeded: number;
+      todayDeclined: number;
+      totalRemaining: number;
+      weeklyStart: number;
+      monthlyStart: number;
+    };
     isLoading: boolean;
     lastFetched: number | null;
   };
@@ -191,9 +200,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [postdates, setPostdates] = useState<DataContextType['postdates']>({
     scheduled: [],
     processed: [],
-    totalRecovered: 0,
-    weeklyStart: 0,
-    monthlyStart: 0,
+    summary: {
+      totalSucceeded: 0,
+      totalDeclined: 0,
+      totalRecovered: 0,
+      totalSucceededAndRecovered: 0,
+      totalProcessed: 0,
+      todaySucceeded: 0,
+      todayDeclined: 0,
+      totalRemaining: 0,
+      weeklyStart: 0,
+      monthlyStart: 0
+    },
     isLoading: false,
     lastFetched: null,
   });
@@ -390,9 +408,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setPostdates({
         scheduled: (data.scheduled || []).filter((p: any) => p.owner || p.accountId || p.amount).map(mapPayment),
         processed: (data.processed || []).filter((p: any) => p.owner || p.accountId || p.amount).map(mapPayment),
-        totalRecovered: data.totalRecovered || 0,
-        weeklyStart: data.weeklyStart || 0,
-        monthlyStart: data.monthlyStart || 0,
+        summary: {
+          totalSucceeded: data.summary?.totalSucceeded || 0,
+          totalDeclined: data.summary?.totalDeclined || 0,
+          totalRecovered: data.summary?.totalRecovered || 0,
+          totalSucceededAndRecovered: data.summary?.totalSucceededAndRecovered || 0,
+          totalProcessed: data.summary?.totalProcessed || 0,
+          todaySucceeded: data.summary?.todaySucceeded || 0,
+          todayDeclined: data.summary?.todayDeclined || 0,
+          totalRemaining: data.summary?.totalRemaining || 0,
+          weeklyStart: data.summary?.weeklyStart || 0,
+          monthlyStart: data.summary?.monthlyStart || 0
+        },
         isLoading: false,
         lastFetched: Date.now(),
       });

@@ -315,6 +315,7 @@ const ProjectionDashboard: React.FC<{ currentUser: AppUser }> = ({ currentUser }
                         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted font-bold group-focus-within:text-indigo-600 transition-colors">$</div>
                         <input 
                           type="number"
+                          step="0.01"
                           value={editFormData[agent.id] ?? 0}
                           onChange={(e) => setEditFormData(prev => ({ ...prev, [agent.id]: parseFloat(e.target.value) || 0 }))}
                           className="w-full pl-8 pr-4 py-3 bg-card border border-border-subtle rounded-xl text-[13px] font-black focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all text-right"

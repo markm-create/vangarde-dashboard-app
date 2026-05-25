@@ -50,7 +50,7 @@ const PaymentTable: React.FC<{
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [ownerFilter, setOwnerFilter] = useState('All');
-  const [statusFilter, setStatusFilter] = useState('All');
+  const [statusFilters, setStatusFilters] = useState<string[]>([]);
   const [dateFilter, setDateFilter] = useState({ start: '', end: '' });
   const [sortConfig, setSortConfig] = useState<{ key: keyof Payment; direction: 'asc' | 'desc' }>({ 
     key: 'rawDate', 
@@ -69,25 +69,26 @@ const PaymentTable: React.FC<{
   }, []);
 
   const filterOptions = useMemo(() => {
-    if (type === 'processed') return ['All', 'Succeeded', 'Failed', 'Broken Promise', 'Recovered', 'Rescheduled', 'Unrecoverable'];
+    if (type === 'processed') return ['Succeeded', 'Failed', 'Broken Promise', 'Recovered', 'Rescheduled', 'Unrecoverable'];
     const ppaSet = new Set<string>();
     initialData.forEach(item => { if (item.ppaAuditStatus) ppaSet.add(item.ppaAuditStatus); });
-    return ['All', ...Array.from(ppaSet)].sort();
+    return Array.from(ppaSet).sort();
   }, [type, initialData]);
 
   const filteredData = useMemo(() => {
     let data = [...initialData];
     if (filterText) { const lower = filterText.toLowerCase(); data = data.filter(item => item.accountId.toLowerCase().includes(lower) || item.owner.toLowerCase().includes(lower) || item.amount.toString().includes(lower) || item.status.toLowerCase().includes(lower) || (item.ppaAuditStatus || '').toLowerCase().includes(lower)); }
     if (ownerFilter !== 'All') data = data.filter(item => item.owner === ownerFilter);
-    if (type === 'processed' && statusFilter !== 'All') {
-      if (statusFilter === 'Failed') {
-        data = data.filter(item => item.status === 'Failed' || item.status === 'Declined' || item.status === 'Broken Promise');
-      } else {
-        data = data.filter(item => item.status === statusFilter);
+    if (statusFilters.length > 0) {
+      if (type === 'processed') {
+        const activeFilters = [...statusFilters];
+        if (activeFilters.includes('Failed')) {
+          activeFilters.push('Declined');
+        }
+        data = data.filter(item => activeFilters.includes(item.status));
+      } else if (type === 'scheduled') {
+        data = data.filter(item => statusFilters.includes(item.ppaAuditStatus || ''));
       }
-    }
-    if (type === 'scheduled' && statusFilter !== 'All') {
-      data = data.filter(item => item.ppaAuditStatus === statusFilter);
     }
     if (dateFilter.start || dateFilter.end) {
       data = data.filter(item => {
@@ -113,7 +114,7 @@ const PaymentTable: React.FC<{
       return 0;
     });
     return data;
-  }, [initialData, filterText, ownerFilter, statusFilter, dateFilter, sortConfig, type]);
+  }, [initialData, filterText, ownerFilter, statusFilters, dateFilter, sortConfig, type]);
 
   const requestSort = (key: keyof Payment) => setSortConfig({ key, direction: sortConfig.key === key && sortConfig.direction === 'asc' ? 'desc' : 'asc' });
   const SortIcon = ({ columnKey }: { columnKey: keyof Payment }) => {
@@ -122,13 +123,26 @@ const PaymentTable: React.FC<{
   };
 
   const handleExport = () => {
-    const headers = ["Account ID", "Owner", "Date Time", "Amount", type === 'scheduled' ? "PPA Audit Status" : "Status"];
-    const rows = filteredData.map(r => [
-      `"${r.accountId}"`,
-      `"${r.owner}"`,
-      `"${r.dateTime}"`,
+    const headers = type === 'scheduled' 
+      ? ["Account Number", "Payment Plan Date", "Payment Owner", "Client Short Name", "Merchant Name", "Account Status", "Payment Amount"]
+      : ["Account Number", "Date Processed", "Payment Owner", "Client Short Name", "Merchant Name", "Payment Amount", "Payment Status"];
+      
+    const rows = filteredData.map(r => type === 'scheduled' ? [
+      `"${r.accountId || ''}"`,
+      `"${r.dateTime || ''}"`,
+      `"${r.owner || ''}"`,
+      `"${r.clientShortName || ''}"`,
+      `"${r.merchantName || ''}"`,
+      `"${r.accountStatus || ''}"`,
+      `"${formatCurrency(r.amount)}"`
+    ] : [
+      `"${r.accountId || ''}"`,
+      `"${r.dateTime || ''}"`,
+      `"${r.owner || ''}"`,
+      `"${r.clientShortName || ''}"`,
+      `"${r.merchantName || ''}"`,
       `"${formatCurrency(r.amount)}"`,
-      type === 'scheduled' ? `"${r.ppaAuditStatus || ''}"` : `"${r.status}"`
+      `"${r.status || ''}"`
     ]);
     const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -176,23 +190,43 @@ const PaymentTable: React.FC<{
            </div>
            {(type === 'processed' || type === 'scheduled') && (
              <div className="relative" ref={filterRef}>
-               <button onClick={() => setIsFilterOpen(!isFilterOpen)} className={`p-2 rounded-xl border transition-colors ${isFilterOpen || statusFilter !== 'All' ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 text-indigo-600' : 'bg-surface-100 border-border-subtle text-text-muted hover:bg-card'}`}><Filter size={16} /></button>
+               <button onClick={() => setIsFilterOpen(!isFilterOpen)} className={`p-2 rounded-xl border transition-colors ${isFilterOpen || statusFilters.length > 0 ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 text-indigo-600' : 'bg-surface-100 border-border-subtle text-text-muted hover:bg-card'}`}><Filter size={16} /></button>
                {isFilterOpen && (
-                 <div className="absolute right-0 top-full mt-2 w-48 bg-card rounded-xl shadow-2xl border border-border-subtle p-4 z-50 animate-in fade-in zoom-in-95">
+                 <div className="absolute right-0 top-full mt-2 w-56 bg-card rounded-xl shadow-2xl border border-border-subtle p-4 z-50 animate-in fade-in zoom-in-95">
                    <div className="flex justify-between items-center mb-4"><h4 className="text-xs font-bold text-text-main uppercase tracking-wider">{type === 'scheduled' ? 'Audit Status' : 'Status Filter'}</h4><button onClick={() => setIsFilterOpen(false)} className="text-text-muted"><X size={14} /></button></div>
                    <div className="space-y-1">
-                     {filterOptions.map((status) => (
-                       <button
-                         key={status}
-                         onClick={() => {
-                           setStatusFilter(status);
-                           setIsFilterOpen(false);
-                         }}
-                         className={`w-full text-left px-3 py-2 rounded-lg text-[11px] font-medium transition-colors ${statusFilter === status ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-text-muted hover:bg-surface-100'}`}
-                       >
-                         {status}
-                       </button>
-                     ))}
+                     <button
+                       onClick={() => setStatusFilters([])}
+                       className={`w-full text-left px-3 py-2 rounded-lg text-[11px] font-medium transition-colors ${statusFilters.length === 0 ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-text-muted hover:bg-surface-100'}`}
+                     >
+                       <div className="flex items-center gap-2">
+                         <div className={`w-3.5 h-3.5 rounded flex items-center justify-center border ${statusFilters.length === 0 ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-border-subtle bg-surface-50'}`}>
+                           {statusFilters.length === 0 && <div className="w-1.5 h-1.5 bg-white rounded-sm" />}
+                         </div>
+                         All Statuses
+                       </div>
+                     </button>
+                     {filterOptions.map((status) => {
+                       const isSelected = statusFilters.includes(status);
+                       return (
+                         <button
+                           key={status}
+                           onClick={() => {
+                             setStatusFilters(prev => 
+                               prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]
+                             );
+                           }}
+                           className={`w-full text-left px-3 py-2 rounded-lg text-[11px] font-medium transition-colors ${isSelected ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-text-muted hover:bg-surface-100'}`}
+                         >
+                           <div className="flex items-center gap-2">
+                             <div className={`w-3.5 h-3.5 rounded flex items-center justify-center border ${isSelected ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-border-subtle bg-surface-50'}`}>
+                               {isSelected && <div className="w-1.5 h-1.5 bg-white rounded-sm" />}
+                             </div>
+                             {status}
+                           </div>
+                         </button>
+                       );
+                     })}
                    </div>
                  </div>
                )}
@@ -205,22 +239,28 @@ const PaymentTable: React.FC<{
         <table className="w-full text-left text-[12px] relative">
           <thead className="sticky top-0 bg-card text-text-muted uppercase tracking-widest border-b border-border-subtle text-[10px] z-10 shadow-sm">
             <tr>
-              <th className="px-6 py-4 font-bold bg-card cursor-pointer hover:bg-surface-100" onClick={() => requestSort('accountId')}>Account ID <SortIcon columnKey="accountId" /></th>
-              <th className="px-6 py-4 font-bold bg-card cursor-pointer hover:bg-surface-100" onClick={() => requestSort('owner')}>Owner <SortIcon columnKey="owner" /></th>
-              <th className="px-6 py-4 font-bold bg-card cursor-pointer hover:bg-surface-100" onClick={() => requestSort('dateTime')}>Date & Time <SortIcon columnKey="dateTime" /></th>
-              <th className="px-6 py-4 text-right font-bold bg-card cursor-pointer hover:bg-surface-100" onClick={() => requestSort('amount')}>Amount <SortIcon columnKey="amount" /></th>
-              {type === 'scheduled' && (
-                <th className="px-6 py-4 text-left font-bold bg-card cursor-pointer hover:bg-surface-100" onClick={() => requestSort('ppaAuditStatus')}>
-                  PPA Audit Status <SortIcon columnKey="ppaAuditStatus" />
-                </th>
+              <th className="px-6 py-4 font-bold bg-card cursor-pointer hover:bg-surface-100" onClick={() => requestSort('accountId')}>Account Number <SortIcon columnKey="accountId" /></th>
+              <th className="px-6 py-4 font-bold bg-card cursor-pointer hover:bg-surface-100" onClick={() => requestSort('dateTime')}>{type === 'scheduled' ? 'Payment Plan Date' : 'Date Processed'} <SortIcon columnKey="dateTime" /></th>
+              <th className="px-6 py-4 font-bold bg-card cursor-pointer hover:bg-surface-100" onClick={() => requestSort('owner')}>Payment Owner <SortIcon columnKey="owner" /></th>
+              {isMaximized && (
+                <>
+                  <th className="px-6 py-4 font-bold bg-card cursor-pointer hover:bg-surface-100" onClick={() => requestSort('clientShortName')}>Client <SortIcon columnKey="clientShortName" /></th>
+                  <th className="px-6 py-4 font-bold bg-card cursor-pointer hover:bg-surface-100" onClick={() => requestSort('merchantName')}>Merchant Name <SortIcon columnKey="merchantName" /></th>
+                </>
               )}
-              {type === 'processed' && (<th className="px-6 py-4 text-right font-bold bg-card cursor-pointer hover:bg-surface-100" onClick={() => requestSort('status')}>Status <SortIcon columnKey="status" /></th>)}
+              {type === 'scheduled' && isMaximized && (
+                <th className="px-6 py-4 text-left font-bold bg-card cursor-pointer hover:bg-surface-100" onClick={() => requestSort('accountStatus')}>Account Status <SortIcon columnKey="accountStatus" /></th>
+              )}
+              <th className="px-6 py-4 text-right font-bold bg-card cursor-pointer hover:bg-surface-100" onClick={() => requestSort('amount')}>Payment Amount <SortIcon columnKey="amount" /></th>
+              {type === 'processed' && (
+                <th className="px-6 py-4 text-right font-bold bg-card cursor-pointer hover:bg-surface-100" onClick={() => requestSort('status')}>Payment Status <SortIcon columnKey="status" /></th>
+              )}
             </tr>
           </thead>
           <tbody className="divide-y divide-border-subtle">
             {isLoading && initialData.length === 0 ? (
               <tr>
-                <td colSpan={type === 'processed' ? 5 : (type === 'scheduled' ? 5 : 5)} className="px-6 py-20">
+                <td colSpan={type === 'processed' ? (isMaximized ? 7 : 5) : (isMaximized ? 7 : 4)} className="px-6 py-20">
                   <div className="flex flex-col items-center justify-center text-text-muted w-full">
                     <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
                     <p className="text-[12px] font-black uppercase tracking-[0.2em] animate-pulse">Fetching records...</p>
@@ -229,15 +269,27 @@ const PaymentTable: React.FC<{
               </tr>
             ) : filteredData.length > 0 ? (filteredData.map((row, i) => (
                 <tr key={i} className="hover:bg-surface-100 transition-colors">
-                  <td className="px-6 py-4 text-indigo-600 dark:text-indigo-400 font-inter italic">{row.accountId}</td>
-                  <td className="px-6 py-4 text-text-main font-normal">{row.owner}</td>
+                  <td className="px-6 py-4 text-indigo-600 dark:text-indigo-400 font-inter italic">
+                    {row.accountLink ? (
+                      <a href={row.accountLink} target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center gap-1 group/link">
+                        {row.accountId}
+                      </a>
+                    ) : (
+                      row.accountId
+                    )}
+                  </td>
                   <td className="px-6 py-4 text-text-muted font-inter font-normal">{row.dateTime}</td>
-                  <td className="px-6 py-4 text-right text-text-main font-inter font-normal">{formatCurrency(row.amount)}</td>
-                  {type === 'scheduled' && (
-                    <td className="px-6 py-4">
-                      <span className={`px-2 py-0.5 rounded text-[9px] font-bold tracking-wide uppercase ${getPpaStatusColor(row.ppaAuditStatus)}`}>{row.ppaAuditStatus || '-'}</span>
-                    </td>
+                  <td className="px-6 py-4 text-text-main font-normal">{row.owner}</td>
+                  {isMaximized && (
+                    <>
+                      <td className="px-6 py-4 text-text-main font-normal">{row.clientShortName || '-'}</td>
+                      <td className="px-6 py-4 text-text-main font-normal">{row.merchantName || '-'}</td>
+                    </>
                   )}
+                  {type === 'scheduled' && isMaximized && (
+                    <td className="px-6 py-4 text-text-main font-normal">{row.accountStatus || '-'}</td>
+                  )}
+                  <td className="px-6 py-4 text-right text-text-main font-inter font-normal">{formatCurrency(row.amount)}</td>
                   {type === 'processed' && (
                     <td className="px-6 py-4 text-right">
                       <span className={`px-2 py-0.5 rounded text-[9px] font-bold tracking-wide uppercase ${
@@ -253,7 +305,7 @@ const PaymentTable: React.FC<{
                     </td>
                   )}
                 </tr>
-              ))) : (<tr><td colSpan={type === 'processed' ? 5 : (type === 'scheduled' ? 5 : 5)} className="px-6 py-20"><div className="flex flex-col items-center justify-center text-text-muted opacity-20 w-full"><FileSearch size={48} className="mb-3" /><p className="text-[12px] font-black uppercase tracking-[0.2em]">No records found</p></div></td></tr>)}
+              ))) : (<tr><td colSpan={type === 'processed' ? (isMaximized ? 7 : 5) : (isMaximized ? 7 : 4)} className="px-6 py-20"><div className="flex flex-col items-center justify-center text-text-muted opacity-20 w-full"><FileSearch size={48} className="mb-3" /><p className="text-[12px] font-black uppercase tracking-[0.2em]">No records found</p></div></td></tr>)}
           </tbody>
         </table>
       </div>
@@ -344,12 +396,38 @@ const PostdatesView: React.FC<{ canManageDocuments: boolean, currentUser: AppUse
       return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
     }).reduce((sum, p) => sum + p.amount, 0);
 
+    // If not a collector, prefer the backend summary data
+    if (!isCollector && postdates.summary) {
+      const summary = postdates.summary;
+      const successRate = summary.totalProcessed > 0 ? ((summary.totalSucceeded / summary.totalProcessed) * 100).toFixed(1) : "0.0";
+      const declineRate = summary.totalProcessed > 0 ? ((summary.totalDeclined / summary.totalProcessed) * 100).toFixed(1) : "0.0";
+      const recoveryRate = summary.totalDeclined > 0 ? ((summary.totalRecovered / summary.totalDeclined) * 100).toFixed(1) : "0.0";
+      const succeededPlusRecoveredRate = summary.totalProcessed > 0 ? ((summary.totalSucceededAndRecovered / summary.totalProcessed) * 100).toFixed(1) : "0.0";
+      
+      return {
+        totalSucceeded: summary.totalSucceeded,
+        totalDeclined: summary.totalDeclined,
+        totalRecovered: summary.totalRecovered,
+        totalProcessed: summary.totalProcessed,
+        totalSucceededPlusRecovered: summary.totalSucceededAndRecovered,
+        todaySucceeded: summary.todaySucceeded,
+        todayDeclined: summary.todayDeclined,
+        totalRemaining: summary.totalRemaining,
+        weeklyStart: summary.weeklyStart,
+        monthlyStart: summary.monthlyStart,
+        successRate,
+        declineRate,
+        recoveryRate,
+        succeededPlusRecoveredRate
+      };
+    }
+
     const totalAmountProcessed = totalSucceeded + totalDeclined;
     const successRate = totalAmountProcessed > 0 ? ((totalSucceeded / totalAmountProcessed) * 100).toFixed(1) : "0.0";
     const declineRate = totalAmountProcessed > 0 ? ((totalDeclined / totalAmountProcessed) * 100).toFixed(1) : "0.0";
     
     // Total Recovered: From Google Sheets
-    let totalRecovered = postdates.totalRecovered || 0; 
+    let totalRecovered = postdates.summary?.totalRecovered || 0; 
     
     if (isCollector && individualCollectors.data) {
       const collectorData = individualCollectors.data.find((item: any) => isNameMatch(item.name, currentUser.name));
@@ -373,20 +451,20 @@ const PostdatesView: React.FC<{ canManageDocuments: boolean, currentUser: AppUse
       todaySucceeded,
       todayDeclined,
       totalRemaining,
-      weeklyStart: postdates.weeklyStart || 0,
-      monthlyStart: postdates.monthlyStart || 0,
+      weeklyStart: postdates.summary?.weeklyStart || 0,
+      monthlyStart: postdates.summary?.monthlyStart || 0,
       successRate,
       declineRate,
       recoveryRate,
       succeededPlusRecoveredRate
     };
-  }, [processedData, scheduledData, postdates.totalRecovered, postdates.weeklyStart, postdates.monthlyStart, individualCollectors.data, isCollector, currentUser.name]);
+  }, [processedData, scheduledData, postdates.summary, individualCollectors.data, isCollector, currentUser.name]);
 
   const MAIN_CARDS = [
     { l: "TOTAL SUCCEEDED", v: `$${stats.totalSucceeded.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, r: `${stats.successRate}%`, theme: "emerald" }, 
     { l: "TOTAL DECLINED", v: `$${stats.totalDeclined.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, r: `${stats.declineRate}%`, theme: "rose" }, 
     { l: "TOTAL RECOVERED", v: `$${stats.totalRecovered.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, r: `${stats.recoveryRate}%`, theme: "blue" },
-    { l: "SUCCEEDED + RECOVERED", v: `$${stats.totalSucceededPlusRecovered.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, r: `${stats.succeededPlusRecoveredRate}%`, theme: "teal" },
+    { l: "TOTAL SUCCEEDED AND RECOVERED", v: `$${stats.totalSucceededPlusRecovered.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, r: `${stats.succeededPlusRecoveredRate}%`, theme: "teal" },
     { l: "TOTAL PROCESSED", v: `$${stats.totalProcessed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, theme: "purple" }
   ];
   
@@ -407,15 +485,6 @@ const PostdatesView: React.FC<{ canManageDocuments: boolean, currentUser: AppUse
           <h1 className="text-2xl font-bold text-text-main uppercase tracking-wide">Post-Dates Dashboard</h1>
           <p className="text-text-muted font-semibold text-[11px] tracking-widest mt-1 uppercase">Payment Processing & Scheduling</p>
         </div>
-        {onNavigate && (
-          <button 
-            onClick={() => onNavigate('audits', 'postdates')}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-sm flex items-center gap-2"
-          >
-            <ClipboardList size={16} />
-            See Recovery Report
-          </button>
-        )}
       </div>
       <div className="shrink-0 mb-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-6">

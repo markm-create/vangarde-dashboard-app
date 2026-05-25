@@ -11,7 +11,9 @@ import {
   XCircle,
   Search,
   Download,
-  Filter
+  Filter,
+  Eye,
+  X
 } from 'lucide-react';
 import { THIRD_PARTY_CAMPAIGN_SCRIPT_URL } from '../constants';
 
@@ -23,6 +25,8 @@ interface CampaignData {
   accountStatus: string;
   debtorEmail: string;
   campaignStatus: string;
+  debtorPaidReturn: string;
+  thirdPartyResponse: string;
   debtorResponse: string;
 }
 
@@ -55,6 +59,9 @@ const ThirdPartyNoticeCampaignView: React.FC<ThirdPartyNoticeCampaignViewProps> 
   const [statusFilter, setStatusFilter] = useState('All');
   const [creditorFilter, setCreditorFilter] = useState('All');
   const [showFilters, setShowFilters] = useState(false);
+  const [replyModalOpen, setReplyModalOpen] = useState(false);
+  const [replyModalTitle, setReplyModalTitle] = useState('');
+  const [replyModalContent, setReplyModalContent] = useState('');
 
   const fetchData = async (force = false, silent = false) => {
     if (!silent) setLoading(true);
@@ -234,7 +241,7 @@ const ThirdPartyNoticeCampaignView: React.FC<ThirdPartyNoticeCampaignViewProps> 
   }, [dateFilteredData, searchTerm, statusFilter, creditorFilter]);
 
   const handleExport = () => {
-    const headers = ['Date Sent', 'Account #', 'Client Name', 'Third Party Entity', 'Letter Type', 'Sent Via', 'Email Status', 'Response Update'];
+    const headers = ['Date Sent', 'Account #', 'Client Name', 'Third Party Entity', 'Letter Type', 'Sent Via', 'Email Status', 'Debtor Paid Return', 'Third-Party Response', 'Debtor Response'];
     const csvContent = [
       headers.join(','),
       ...data.map(d => [
@@ -245,7 +252,9 @@ const ThirdPartyNoticeCampaignView: React.FC<ThirdPartyNoticeCampaignViewProps> 
         `"${d.accountStatus}"`,
         `"${d.debtorEmail}"`,
         `"${d.campaignStatus}"`,
-        `"${d.debtorResponse}"`
+        `"${d.debtorPaidReturn || '-'}"`,
+        `"${d.thirdPartyResponse || '-'}"`,
+        `"${d.debtorResponse || '-'}"`
       ].join(','))
     ].join('\n');
 
@@ -449,13 +458,15 @@ const ThirdPartyNoticeCampaignView: React.FC<ThirdPartyNoticeCampaignViewProps> 
                   <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest border-b border-border-subtle">Letter Type</th>
                   <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest border-b border-border-subtle">Sent Via</th>
                   <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest border-b border-border-subtle">Email Status</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest border-b border-border-subtle">Response Update</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest border-b border-border-subtle">Debtor Paid Return</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest border-b border-border-subtle">Third-Party...</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest border-b border-border-subtle">Debtor Response</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-subtle">
                 {filteredData.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-16 text-center">
+                    <td colSpan={10} className="px-6 py-16 text-center">
                       <div className="flex flex-col items-center justify-center gap-4">
                         <div className="w-16 h-16 rounded-full bg-surface-100 text-text-muted flex items-center justify-center">
                           <Search size={32} />
@@ -494,9 +505,45 @@ const ThirdPartyNoticeCampaignView: React.FC<ThirdPartyNoticeCampaignViewProps> 
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="max-w-xs truncate text-xs font-medium text-text-muted italic" title={row.debtorResponse}>
-                          {row.debtorResponse || '-'}
-                        </div>
+                        <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest ${
+                          String(row.debtorPaidReturn || '').toLowerCase().includes('yes') ? 'bg-emerald-50 text-emerald-600' :
+                          String(row.debtorPaidReturn || '').toLowerCase().includes('no') ? 'bg-rose-50 text-rose-600' :
+                          'bg-surface-100 text-text-muted'
+                        }`}>
+                          {row.debtorPaidReturn || '-'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        {row.thirdPartyResponse && row.thirdPartyResponse !== '-' ? (
+                          <button
+                            onClick={() => {
+                              setReplyModalTitle('Third-Party Response');
+                              setReplyModalContent(row.thirdPartyResponse);
+                              setReplyModalOpen(true);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors"
+                          >
+                            <Eye size={12} /> View Reply
+                          </button>
+                        ) : (
+                          <span className="text-[10px] font-bold text-text-muted italic">-</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        {row.debtorResponse && row.debtorResponse !== '-' ? (
+                          <button
+                            onClick={() => {
+                              setReplyModalTitle('Debtor Response');
+                              setReplyModalContent(row.debtorResponse);
+                              setReplyModalOpen(true);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors"
+                          >
+                            <Eye size={12} /> View Reply
+                          </button>
+                        ) : (
+                          <span className="text-[10px] font-bold text-text-muted italic">-</span>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -511,6 +558,43 @@ const ThirdPartyNoticeCampaignView: React.FC<ThirdPartyNoticeCampaignViewProps> 
           </div>
         </div>
       </div>
+
+      {/* Reply Modal */}
+      {replyModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-app/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-card w-full max-w-lg rounded-3xl border border-border-subtle shadow-xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-6 border-b border-border-subtle bg-surface-50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                  <MessageSquare size={18} />
+                </div>
+                <h3 className="text-sm font-black text-text-main uppercase tracking-widest">{replyModalTitle}</h3>
+              </div>
+              <button 
+                onClick={() => setReplyModalOpen(false)}
+                className="p-2 rounded-full hover:bg-surface-100 text-text-muted transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[60vh]">
+              <div className="bg-surface-50 border border-border-subtle rounded-2xl p-6">
+                <p className="text-sm font-medium text-text-main leading-relaxed whitespace-pre-wrap">
+                  {replyModalContent}
+                </p>
+              </div>
+            </div>
+            <div className="p-4 border-t border-border-subtle bg-surface-50 flex justify-end">
+              <button
+                onClick={() => setReplyModalOpen(false)}
+                className="px-6 py-2.5 bg-card hover:bg-surface-100 border border-border-subtle text-text-main rounded-xl text-[10px] font-bold uppercase tracking-widest text-center transition-all"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

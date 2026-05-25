@@ -33,18 +33,22 @@ function doGet(e) {
   // Letter Type: Column H (Index 7)
   // Sent Via: Column I (Index 8)
   // Email Status: Column J (Index 9)
-  // Response Update: Column K (Index 10)
+  // Debtor Paid Return: Column K (Index 10)
+  // Third-Party Response: Column L (Index 11)
+  // Debtor Response: Column M (Index 12)
 
   const results = rows.map(row => {
     return {
       dateSent: row[0],
       accountNumber: row[1],
       creditorName: row[3],
-      businessName: row[5], // Mapped Third Party Entity here
-      accountStatus: row[7], // Mapped Letter Type here
-      debtorEmail: row[8], // Mapped Sent Via here
-      campaignStatus: row[9], // Mapped Email Status here
-      debtorResponse: row[10] || '-' // Mapped Response Update here
+      businessName: row[5], 
+      accountStatus: row[7], 
+      debtorEmail: row[8], 
+      campaignStatus: row[9],
+      debtorPaidReturn: row[10] || '-',
+      thirdPartyResponse: row[11] || '-',
+      debtorResponse: row[12] || '-' 
     };
   }).filter(item => item.accountNumber);
 

@@ -388,127 +388,13 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, currentUser }
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 shrink-0">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 shrink-0 mb-4">
                 <StatCard label="Success Rate" val={`${stats.successRate.val}%`} change={stats.successRate.change} isIncrease={stats.successRate.isIncrease} theme="emerald" icon={CheckCircle2} />
                 <StatCard label="Decline Rate" val={`${stats.declineRate.val}%`} change={stats.declineRate.change} isIncrease={stats.declineRate.isIncrease} theme="rose" icon={ArrowDown} />
                 <StatCard label="Processed Post-dates" val={formatCurrency(stats.processed.val)} change={stats.processed.change} isIncrease={stats.processed.isIncrease} theme="blue" icon={CreditCard} subVal={`${stats.processed.count} Trans`} />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 shrink-0 mb-4">
-                <div className="bg-card rounded-[2rem] p-8 border border-border-subtle shadow-sm flex flex-col relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform">
-                        <Mail size={120} strokeWidth={1} />
-                    </div>
-                    <div className="flex items-center justify-between mb-6 relative z-10">
-                        <div className="flex items-center gap-3">
-                            <div className="p-3 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl shadow-sm">
-                                <Mail size={24} />
-                            </div>
-                            <div>
-                                <h3 className="font-black text-xl text-text-main uppercase tracking-tight">Email Campaigns</h3>
-                            </div>
-                        </div>
-                        <button className="p-2 rounded-xl bg-surface-100 border border-border-subtle text-text-muted hover:text-indigo-500 transition-all">
-                            <MoreHorizontal size={20} />
-                        </button>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4 mb-8 relative z-10">
-                        <div className="bg-surface-50 dark:bg-surface-900/10 p-5 rounded-2xl border border-border-subtle/50 relative">
-                            {emailCampaignStats.isLoading && (
-                                <div className="absolute inset-0 bg-surface-50/50 dark:bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-border-subtle flex items-center justify-center z-20">
-                                    <Loader2 size={16} className="text-indigo-500 animate-spin" />
-                                </div>
-                            )}
-                            <p className="text-[9px] font-black text-text-muted uppercase tracking-widest mb-1">Total Campaigns</p>
-                            <p className="text-2xl font-black text-text-main font-inter">
-                                {emailCampaignStats.sent.toLocaleString()}
-                            </p>
-                            <div className="flex items-center gap-1 mt-1">
-                                <span className="text-[9px] font-bold text-text-muted">All Recorded Accounts</span>
-                            </div>
-                        </div>
-                        <div className="bg-surface-50 dark:bg-surface-900/10 p-5 rounded-2xl border border-border-subtle/50 relative">
-                            {emailCampaignStats.isLoading && (
-                                <div className="absolute inset-0 bg-surface-50/50 dark:bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-border-subtle flex items-center justify-center z-20">
-                                    <Loader2 size={16} className="text-indigo-500 animate-spin" />
-                                </div>
-                            )}
-                            <p className="text-[9px] font-black text-text-muted uppercase tracking-widest mb-1">Response Rate</p>
-                            <p className="text-2xl font-black text-text-main font-inter">
-                                {emailCampaignStats.responseRate.toFixed(1)}%
-                            </p>
-                            <div className="flex items-center gap-1 mt-1">
-                                <span className="text-[9px] font-bold text-text-muted">Initial Replies</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="mt-auto relative z-10">
-                        <button onClick={() => onNavigate('campaign', 'initial')} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase text-xs tracking-widest transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-3 group/btn">
-                            See Campaign History <History size={16} className="group-hover/btn:rotate-[-10deg] transition-transform" />
-                        </button>
-                    </div>
-                </div>
-
-                <div className="bg-card rounded-[2rem] p-8 border border-border-subtle shadow-sm flex flex-col relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform">
-                        <MessageSquare size={120} strokeWidth={1} />
-                    </div>
-                    <div className="flex items-center justify-between mb-6 relative z-10">
-                        <div className="flex items-center gap-3">
-                            <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-2xl shadow-sm">
-                                <MessageSquare size={24} />
-                            </div>
-                            <div>
-                                <h3 className="font-black text-xl text-text-main uppercase tracking-tight">Follow-up SMS</h3>
-                            </div>
-                        </div>
-                        <button className="p-2 rounded-xl bg-surface-100 border border-border-subtle text-text-muted hover:text-emerald-500 transition-all">
-                            <MoreHorizontal size={20} />
-                        </button>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 mb-8 relative z-10">
-                        <div className="bg-surface-50 dark:bg-surface-900/10 p-5 rounded-2xl border border-border-subtle/50 relative">
-                            {smsCampaignStats.isLoading && (
-                                <div className="absolute inset-0 bg-surface-50/50 dark:bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-border-subtle flex items-center justify-center z-20">
-                                    <Loader2 size={16} className="text-emerald-500 animate-spin" />
-                                </div>
-                            )}
-                            <p className="text-[9px] font-black text-text-muted uppercase tracking-widest mb-1">Total Campaigns</p>
-                            <p className="text-2xl font-black text-text-main font-inter">
-                                {smsCampaignStats.sent.toLocaleString()}
-                            </p>
-                            <div className="flex items-center gap-1 mt-1">
-                                <span className="text-[9px] font-bold text-text-muted">All Recorded Accounts</span>
-                            </div>
-                        </div>
-                        <div className="bg-surface-50 dark:bg-surface-900/10 p-5 rounded-2xl border border-border-subtle/50 relative">
-                            {smsCampaignStats.isLoading && (
-                                <div className="absolute inset-0 bg-surface-50/50 dark:bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-border-subtle flex items-center justify-center z-20">
-                                    <Loader2 size={16} className="text-emerald-500 animate-spin" />
-                                </div>
-                            )}
-                            <p className="text-[9px] font-black text-text-muted uppercase tracking-widest mb-1">Response Rate</p>
-                            <p className="text-2xl font-black text-text-main font-inter">
-                                {smsCampaignStats.responseRate.toFixed(1)}%
-                            </p>
-                            <div className="flex items-center gap-1 mt-1">
-                                <span className="text-[9px] font-bold text-text-muted">Follow-up Replies</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="mt-auto relative z-10">
-                        <button onClick={() => onNavigate('campaign', 'sms')} className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase text-xs tracking-widest transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-3 group/btn">
-                            See Campaign History <History size={16} className="group-hover/btn:rotate-[-10deg] transition-transform" />
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 shrink-0 p-1">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 shrink-0 p-1">
                 <OpsCard 
                     label="New Imports" 
                     val={opsMetrics.imports.count} 
