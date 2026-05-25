@@ -34,8 +34,9 @@ function doGet(e) {
   // Sent Via: Column I (Index 8)
   // Email Status: Column J (Index 9)
   // Debtor Paid Return: Column K (Index 10)
-  // Third-Party Response: Column L (Index 11)
-  // Debtor Response: Column M (Index 12)
+  // Paid Amount: Column L (Index 11)
+  // Third-Party Response: Column M (Index 12)
+  // Debtor Response: Column N (Index 13)
 
   const results = rows.map(row => {
     return {
@@ -47,8 +48,9 @@ function doGet(e) {
       debtorEmail: row[8], 
       campaignStatus: row[9],
       debtorPaidReturn: row[10] || '-',
-      thirdPartyResponse: row[11] || '-',
-      debtorResponse: row[12] || '-' 
+      paidAmount: row[11] || '-',
+      thirdPartyResponse: row[12] || '-',
+      debtorResponse: row[13] || '-' 
     };
   }).filter(item => item.accountNumber);
 

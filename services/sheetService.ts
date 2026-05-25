@@ -489,12 +489,15 @@ export const sheetService = {
   async getProjectionData() {
     try {
       if (!PROJECTION_SCRIPT_URL) return [];
+      
       const response = await fetch(PROJECTION_SCRIPT_URL, {
-        method: 'GET',
+        method: 'POST',
         credentials: 'omit',
         redirect: 'follow',
-        cache: 'no-store'
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'getProjections' })
       });
+
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const result = await response.json();
       
@@ -505,8 +508,9 @@ export const sheetService = {
       return Array.isArray(result) ? result : (result.data || []);
     } catch (error) {
       console.error('Error fetching projection data:', error);
-      if (error instanceof Error && error.message.includes('Failed to fetch')) {
-        throw new Error('Failed to fetch: CORS error or network issue. Make sure the Google Apps Script is deployed as "Web app" with "Who has access" set to "Anyone".');
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.includes('Failed to fetch')) {
+        throw new Error('Failed to fetch: Connection Blocked. Make sure the Google Apps Script is deployed as "Web app" with "Who has access" set to "Anyone".');
       }
       throw error;
     }

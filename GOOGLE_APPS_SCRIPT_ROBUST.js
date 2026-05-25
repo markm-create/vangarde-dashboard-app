@@ -31,6 +31,10 @@ function doPost(e) {
       return handleUpdateProjection(payload);
     }
     
+    if (action === 'getProjections') {
+      return handleGetProjections();
+    }
+    
     if (action === 'updatePostdate') {
       return handleUpdatePostdate(payload);
     }
