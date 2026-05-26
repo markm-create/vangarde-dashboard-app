@@ -490,12 +490,13 @@ export const sheetService = {
     try {
       if (!PROJECTION_SCRIPT_URL) return [];
       
-      const response = await fetch(PROJECTION_SCRIPT_URL, {
-        method: 'POST',
+      const url = new URL(PROJECTION_SCRIPT_URL);
+      url.searchParams.set('t', Date.now().toString());
+
+      const response = await fetch(url.toString(), {
+        method: 'GET',
         credentials: 'omit',
-        redirect: 'follow',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'getProjections' })
+        cache: 'no-store'
       });
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);

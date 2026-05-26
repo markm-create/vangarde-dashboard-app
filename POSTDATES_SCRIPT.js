@@ -72,7 +72,7 @@ function getPostdatesData() {
           accountId: String(row[0] || ''),          // Col A
           accountLink: linkUrl || null,             // Link from Col A
           dateTime: row[1] instanceof Date ? row[1].toISOString() : String(row[1] || ''), // Col B
-          owner: String(row[3] || ''),             // Col D
+          owner: String(row[11] || ''),            // Col L (Changed from Col D/row[3])
           clientShortName: String(row[4] || ''),   // Col E
           merchantName: String(row[5] || ''),      // Col F
           accountStatus: String(row[6] || ''),     // Col G
@@ -91,19 +91,19 @@ function getPostdatesData() {
       const rows = procData.slice(1);
       const richRows = procRichText.slice(1);
       rows.forEach((row, i) => {
-        let linkUrl = richRows[i][7] ? richRows[i][7].getLinkUrl() : null;
-        if (!linkUrl && row[7] && String(row[7]).startsWith('http')) {
-          linkUrl = String(row[7]);
+        let linkUrl = richRows[i][8] ? richRows[i][8].getLinkUrl() : null;
+        if (!linkUrl && row[8] && String(row[8]).startsWith('http')) {
+          linkUrl = String(row[8]);
         }
         processedData.push({
           accountId: String(row[1] || ''),          // Col B
-          accountLink: linkUrl || null,             // Link from Col H
+          accountLink: linkUrl || null,             // Link from Col I
           dateTime: row[0] instanceof Date ? row[0].toISOString() : String(row[0] || ''), // Col A
           owner: String(row[2] || ''),             // Col C
           clientShortName: String(row[3] || ''),   // Col D
           merchantName: String(row[4] || ''),      // Col E
-          amount: parseFloat(row[5]) || 0,         // Col F
-          status: String(row[6] || '')             // Col G
+          amount: parseFloat(row[6]) || 0,         // Col G
+          status: String(row[7] || '')             // Col H
         });
       });
     }
