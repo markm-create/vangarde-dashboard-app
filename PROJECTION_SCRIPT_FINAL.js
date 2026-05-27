@@ -9,37 +9,48 @@ function doGet(e) {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sheet = ss.getSheetByName("Projection");
     
-    if (!sheet) {
-      return createJsonResponse({ error: "Sheet 'Projection' not found" });
-    }
+    if (!sheet) return createJsonResponse({ error: "Sheet 'Projection' not found" });
 
     const lastRow = sheet.getLastRow();
-    if (lastRow < 3) {
-      return createJsonResponse([]); // No data yet
+    if (lastRow < 3) return createJsonResponse([]); 
+
+    // Read everything from Column B (2) to Column K (11). Total columns = 10
+    const dataRange = sheet.getRange(3, 2, lastRow - 2, 10);
+    const data = dataRange.getValues();
+    
+    const result = [];
+    
+    for (let i = 0; i < data.length; i++) {
+      const row = data[i];
+      // row[0] is Column B (Collector Name)
+      // row[1] is Column C (Hidden)
+      // row[2] is Column D (Week 1 Projected)
+      // row[3] is Column E (Week 1 Collected)
+      // row[4] is Column F (Week 2 Projected)
+      // row[5] is Column G (Week 2 Collected)
+      // row[6] is Column H (Week 3 Projected)
+      // row[7] is Column I (Week 3 Collected)
+      // row[8] is Column J (Week 4 Projected)
+      // row[9] is Column K (Week 4 Collected)
+      const name = row[0] ? row[0].toString().trim() : "";
+      
+      if (!name) continue; // Skip if name is empty
+
+      result.push({
+        id: "agent-" + i,
+        name: name,
+        weeks: {
+          w1: { projection: Number(row[2]) || 0, collected: Number(row[3]) || 0 }, // Col D, E
+          w2: { projection: Number(row[4]) || 0, collected: Number(row[5]) || 0 }, // Col F, G
+          w3: { projection: Number(row[6]) || 0, collected: Number(row[7]) || 0 }, // Col H, I
+          w4: { projection: Number(row[8]) || 0, collected: Number(row[9]) || 0 }  // Col J, K
+        }
+      });
     }
 
-    // Get data starting from Row 3, Columns A through I (9 columns total)
-    // A: Name, B/C: W1, D/E: W2, F/G: W3, H/I: W4
-    const data = sheet.getRange(3, 1, lastRow - 2, 9).getValues();
-    
-    const result = data.map(row => {
-      const name = row[0];
-      if (!name || name.toString().trim() === "") return null; // Skip empty rows
-      
-      return {
-        name: name.toString(),
-        weeks: {
-          w1: { projection: Number(row[1]) || 0, collected: Number(row[2]) || 0 },
-          w2: { projection: Number(row[3]) || 0, collected: Number(row[4]) || 0 },
-          w3: { projection: Number(row[5]) || 0, collected: Number(row[6]) || 0 },
-          w4: { projection: Number(row[7]) || 0, collected: Number(row[8]) || 0 }
-        }
-      };
-    }).filter(item => item !== null);
-
     return createJsonResponse(result);
-  } catch (e) {
-    return createJsonResponse({ error: e.toString() });
+  } catch (err) {
+    return createJsonResponse({ error: err.toString() });
   }
 }
 
@@ -49,7 +60,13 @@ function doPost(e) {
       return createJsonResponse({ status: 'error', message: 'No payload provided' });
     }
     
-    const requestData = JSON.parse(e.postData.contents);
+    let requestData;
+    try {
+      requestData = JSON.parse(e.postData.contents);
+    } catch (parseErr) {
+      return createJsonResponse({ status: 'error', message: 'Invalid JSON payload' });
+    }
+
     const action = requestData.action;
     const payload = requestData.payload;
 
@@ -57,34 +74,28 @@ function doPost(e) {
       const ss = SpreadsheetApp.getActiveSpreadsheet();
       const sheet = ss.getSheetByName("Projection");
       
-      if (!sheet) {
-        return createJsonResponse({ status: 'error', message: "Sheet 'Projection' not found" });
-      }
+      if (!sheet) return createJsonResponse({ status: 'error', message: "Sheet 'Projection' not found" });
 
       const lastRow = sheet.getLastRow();
-      if (lastRow < 3) return createJsonResponse({ status: 'success' }); // Nothing to update
+      if (lastRow < 3) return createJsonResponse({ status: 'success', message: 'No data rows to update' });
       
-      const namesRange = sheet.getRange(3, 1, lastRow - 2, 1);
-      const names = namesRange.getValues().map(row => String(row[0]).trim());
+      // Get all names from Column B
+      const names = sheet.getRange(3, 2, lastRow - 2, 1).getValues().map(r => String(r[0]).trim().toLowerCase());
 
-      // Loop through updates
       if (Array.isArray(payload)) {
         payload.forEach(update => {
-          const agentName = String(update.agentName).trim();
-          const rowIndex = names.findIndex(n => n.toLowerCase() === agentName.toLowerCase());
+          const agentName = String(update.agentName).trim().toLowerCase();
+          const rowIndex = names.indexOf(agentName);
           
           if (rowIndex !== -1) {
-            const actualRow = rowIndex + 3; // +3 because data starts at row 3
-            const projections = update.projections || {};
+            const actualRow = rowIndex + 3; 
+            const proj = update.projections || {};
             
-            // Col B (2): W1 Proj
-            if (projections.w1 !== undefined) sheet.getRange(actualRow, 2).setValue(projections.w1);
-            // Col D (4): W2 Proj
-            if (projections.w2 !== undefined) sheet.getRange(actualRow, 4).setValue(projections.w2);
-            // Col F (6): W3 Proj
-            if (projections.w3 !== undefined) sheet.getRange(actualRow, 6).setValue(projections.w3);
-            // Col H (8): W4 Proj
-            if (projections.w4 !== undefined) sheet.getRange(actualRow, 8).setValue(projections.w4);
+            // Explicitly updates columns if they are provided in the payload
+            if (proj.w1 !== undefined && proj.w1 !== null) sheet.getRange(actualRow, 4).setValue(proj.w1);  // Col D
+            if (proj.w2 !== undefined && proj.w2 !== null) sheet.getRange(actualRow, 6).setValue(proj.w2);  // Col F
+            if (proj.w3 !== undefined && proj.w3 !== null) sheet.getRange(actualRow, 8).setValue(proj.w3);  // Col H
+            if (proj.w4 !== undefined && proj.w4 !== null) sheet.getRange(actualRow, 10).setValue(proj.w4); // Col J
           }
         });
       }
@@ -93,12 +104,17 @@ function doPost(e) {
     }
 
     return createJsonResponse({ status: 'error', message: 'Unknown action' });
-  } catch (e) {
-    return createJsonResponse({ status: 'error', message: e.toString() });
+  } catch (err) {
+    return createJsonResponse({ status: 'error', message: err.toString() });
   }
 }
 
 function createJsonResponse(data) {
   return ContentService.createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doOptions(e) {
+  return ContentService.createTextOutput('')
+    .setMimeType(ContentService.MimeType.TEXT);
 }

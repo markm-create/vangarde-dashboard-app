@@ -45,7 +45,10 @@ const ProjectionDashboard: React.FC<{ currentUser: AppUser }> = ({ currentUser }
         agentId: agent.id,
         agentName: agent.name,
         projections: {
-          [weekKey]: editFormData[agentId]
+          w1: weekKey === 'w1' ? editFormData[agentId] : agent.weeks.w1.projection,
+          w2: weekKey === 'w2' ? editFormData[agentId] : agent.weeks.w2.projection,
+          w3: weekKey === 'w3' ? editFormData[agentId] : agent.weeks.w3.projection,
+          w4: weekKey === 'w4' ? editFormData[agentId] : agent.weeks.w4.projection
         }
       };
     }).filter(Boolean);
@@ -155,8 +158,11 @@ const ProjectionDashboard: React.FC<{ currentUser: AppUser }> = ({ currentUser }
   }, []);
 
   const sortedData = useMemo(() => [...data].sort((a, b) => a.name.localeCompare(b.name)), [data]);
-  const formatCurrency = (val: number) => `$${val.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-  const getReachedColor = (pct: number) => pct >= 100 ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 border-emerald-100 dark:border-emerald-800' : pct >= 85 ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 border-indigo-100 dark:border-indigo-800' : 'text-rose-600 bg-rose-50 dark:bg-rose-900/30 border-rose-100 dark:border-rose-800';
+  const formatCurrency = (val: number) => `$${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const getReachedColor = (pct: number) => {
+    const validPct = isNaN(pct) ? 0 : pct;
+    return validPct >= 100 ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 border-emerald-100 dark:border-emerald-800' : validPct >= 85 ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 border-indigo-100 dark:border-indigo-800' : 'text-rose-600 bg-rose-50 dark:bg-rose-900/30 border-rose-100 dark:border-rose-800';
+  };
 
   const handleExport = () => {
     const headers = ["Agent", "W1 Proj", "W1 Coll", "W2 Proj", "W2 Coll", "W3 Proj", "W3 Coll", "W4 Proj", "W4 Coll", "Total Proj", "Total Coll", "Final Reach %"];
@@ -185,7 +191,7 @@ const ProjectionDashboard: React.FC<{ currentUser: AppUser }> = ({ currentUser }
   };
 
   const WeeklySummaryCard = ({ weekNum, collected, projected, range }: { weekNum: number, collected: number, projected: number, range: string }) => {
-    const pct = (collected / projected) * 100;
+    const pct = projected > 0 ? (collected / projected) * 100 : (collected > 0 ? 100 : 0);
     return (
       <div className="bg-card p-6 rounded-2xl border border-border-subtle shadow-sm flex flex-col justify-between h-44 transition-all hover:shadow-md">
          <div className="flex-1">
@@ -196,7 +202,7 @@ const ProjectionDashboard: React.FC<{ currentUser: AppUser }> = ({ currentUser }
              <h3 className="text-3xl font-black text-text-main tracking-tight mb-4">{formatCurrency(projected)}</h3>
              <div className="flex items-center justify-between gap-4">
                 <div className="flex flex-col"><p className="text-[10px] font-bold text-text-muted uppercase tracking-tight">Collected</p><span className="text-lg font-black text-text-main font-inter">{formatCurrency(collected)}</span></div>
-                <div className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[11px] font-black ${getReachedColor(pct)} shrink-0`}><Target size={14} />{pct.toFixed(1)}%</div>
+                <div className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[11px] font-black ${getReachedColor(pct)} shrink-0`}><Target size={14} />{!isNaN(pct) ? pct.toFixed(1) : '0.0'}%</div>
              </div>
          </div>
       </div>
@@ -267,7 +273,7 @@ const ProjectionDashboard: React.FC<{ currentUser: AppUser }> = ({ currentUser }
                     <tr key={row.id} className="hover:bg-surface-100 transition-colors group">
                       <td className="px-10 py-5 sticky left-0 bg-card group-hover:bg-surface-100 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] transition-colors"><div className="flex items-center gap-4"><div className="w-9 h-9 rounded-full bg-surface-100 text-text-muted flex items-center justify-center font-bold group-hover:bg-indigo-600 group-hover:text-white transition-all text-[10px]">{row.name.split(' ').map(n => n[0]).join('').toUpperCase()}</div><span className="font-black text-text-main">{row.name}</span></div></td>
                       {[row.weeks.w1, row.weeks.w2, row.weeks.w3, row.weeks.w4].map((wk, i) => (
-                        <td key={i} className="px-8 py-5 text-center border-l border-border-subtle font-inter"><div className="flex justify-center gap-10 font-bold"><span className="w-16 text-text-muted/60">{formatCurrency(wk.projection)}</span><span className="w-16 text-text-main">{formatCurrency(wk.collected)}</span><span className={`px-2 py-0.5 rounded text-[10px] w-12 border flex items-center justify-center ${getReachedColor(wk.reached)}`}>{wk.reached.toFixed(1)}%</span></div></td>
+                        <td key={i} className="px-8 py-5 text-center border-l border-border-subtle font-inter"><div className="flex justify-center gap-10 font-bold"><span className="w-16 text-text-muted/60">{formatCurrency(wk.projection)}</span><span className="w-16 text-text-main">{formatCurrency(wk.collected)}</span><span className={`px-2 py-0.5 rounded text-[10px] w-12 border flex items-center justify-center ${getReachedColor(wk.reached)}`}>{!isNaN(wk.reached) ? wk.reached.toFixed(1) : '0.0'}%</span></div></td>
                       ))}
                     </tr>))}
                 </tbody>
@@ -315,7 +321,7 @@ const ProjectionDashboard: React.FC<{ currentUser: AppUser }> = ({ currentUser }
                         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted font-bold group-focus-within:text-indigo-600 transition-colors">$</div>
                         <input 
                           type="number"
-                          step="0.01"
+                          step="100"
                           value={editFormData[agent.id] ?? 0}
                           onChange={(e) => setEditFormData(prev => ({ ...prev, [agent.id]: parseFloat(e.target.value) || 0 }))}
                           className="w-full pl-8 pr-4 py-3 bg-card border border-border-subtle rounded-xl text-[13px] font-black focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all text-right"
